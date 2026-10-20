@@ -1,0 +1,185 @@
+@if (!myTeam().length) {
+  <section
+    class="mx-auto flex max-w-md flex-col items-center gap-4 rounded-xl border border-dashed border-slate-700 p-8 text-center"
+  >
+    <p class="text-slate-300">{{ t('calc.noTeam') }}</p>
+    <a
+      routerLink="/equipo"
+      class="rounded-lg bg-amber-400 px-4 py-2 font-semibold text-slate-950 hover:bg-amber-300"
+    >
+      {{ t('pick.addTeam') }}
+    </a>
+  </section>
+} @else {
+  <div class="flex flex-col gap-4">
+    <!-- Los dos equipos, fijos bajo la cabecera: se cambia de Pokémon sin volver arriba. -->
+    <section
+      class="sticky top-14 z-20 -mx-4 grid gap-2 border-b border-slate-800/80 bg-slate-950/95 px-4 pt-1 pb-2.5 backdrop-blur md:grid-cols-2 md:gap-4"
+    >
+      <div class="flex flex-col gap-1.5">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xs font-semibold tracking-wide text-slate-400 uppercase">
+            {{ t('calc.myPokemon') }}
+          </h2>
+          <button
+            type="button"
+            class="text-xs text-slate-400 hover:text-amber-300"
+            [title]="t('calc.newGameTitle')"
+            (click)="state.newGame()"
+          >
+            {{ t('calc.newGame') }}
+          </button>
+        </div>
+        <div
+          class="grid grid-cols-6 gap-1.5"
+          role="radiogroup"
+          [attr.aria-label]="t('calc.myPokemon')"
+        >
+          @for (member of myTeam(); track member.species; let i = $index) {
+            <button
+              type="button"
+              role="radio"
+              [attr.aria-checked]="member === state.me()"
+              [title]="member.species"
+              (click)="state.myIndex.set(i)"
+              class="relative flex h-12 items-center justify-center rounded-lg ring-1 sm:h-14"
+              [class]="
+                member === state.me()
+                  ? 'bg-emerald-400/15 ring-emerald-400/70'
+                  : 'bg-slate-900 ring-slate-800 hover:ring-slate-600'
+              "
+            >
+              <app-sprite
+                [species]="member.species"
+                [size]="40"
+                [class.opacity-40]="state.myStatusOf(member.species).hp === 0"
+                [class.grayscale]="state.myStatusOf(member.species).hp === 0"
+              />
+              @if (state.myStatusOf(member.species).mega) {
+                <span
+                  class="absolute top-0.5 right-0.5 rounded bg-fuchsia-500/80 px-1 text-[9px] leading-tight font-bold text-white"
+                  [title]="t('calc.megaBadge')"
+                  >M</span
+                >
+              }
+              @if (state.myStatusOf(member.species).hp < 100) {
+                <span
+                  class="absolute inset-x-1.5 bottom-1 h-1 rounded-full bg-slate-800"
+                  aria-hidden="true"
+                >
+                  <span
+                    class="block h-full rounded-full bg-emerald-400"
+                    [style.width.%]="state.myStatusOf(member.species).hp"
+                  ></span>
+                </span>
+              }
+            </button>
+          }
+        </div>
+      </div>
+
+      <app-rival-team-picker [selectable]="true" />
+    </section>
+
+    @if (data.error(); as error) {
+      <p class="rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 text-rose-200" role="alert">
+        {{ t('data.error', { error }) }}
+      </p>
+    } @else if (!data.metagame()) {
+      <p class="text-slate-400" role="status">{{ t('data.loading') }}</p>
+    } @else if (!state.matchup()) {
+      <p class="rounded-xl border border-dashed border-slate-700 p-8 text-center text-slate-400">
+        {{ t('calc.addRivals') }}
+      </p>
+    } @else if (state.matchup(); as m) {
+      <!-- El campo, arriba: cambia la velocidad y el daño de todo lo de abajo. -->
+      <app-field-bar
+        [(field)]="state.field"
+        [(mySide)]="state.mySide"
+        [(theirSide)]="state.theirSide"
+        (reset)="state.resetField()"
+      />
+
+      <!-- Enfrentamiento: estado de cada uno en la partida y quién se mueve antes. -->
+      <section class="grid gap-2 md:grid-cols-2 md:gap-3">
+        <app-battle-status-panel
+          [species]="state.me()!.species"
+          [status]="state.myStatus()"
+          [mine]="true"
+          [self]="state.me()"
+          [opponentAbility]="rivalAbility()"
+          [stones]="myStones()"
+          [megaUsedBy]="state.myMega()"
+          (changed)="state.updateMyStatus(state.me()!.species, $event)"
+          (megaEvolve)="state.megaEvolve('mine', state.me()!.species, $event)"
+        />
+        <app-battle-status-panel
+          [species]="state.rival()!"
+          [status]="state.rivalStatus()"
+          [self]="m.rivalSet"
+          [opponentAbility]="myAbility()"
+          [stones]="rivalStones()"
+          [megaUsedBy]="state.rivalMega()"
+          (changed)="state.updateRivalStatus(state.rival()!, $event)"
+          (megaEvolve)="state.megaEvolve('rivals', state.rival()!, $event)"
+        />
+        <app-speed-card
+          class="md:col-span-2"
+          [speed]="m.speed"
+          [trickRoom]="state.field().trickRoom"
+        />
+      </section>
+
+      <div class="grid gap-4 lg:grid-cols-2">
+        <section
+          class="rounded-xl border border-slate-800 bg-slate-900 p-3"
+          aria-labelledby="my-attacks"
+        >
+          <h3 id="my-attacks" class="font-semibold text-emerald-300">{{ t('calc.myAttacks') }}</h3>
+          @for (row of damaging(m.myMoves); track row.move) {
+            <app-damage-row
+              [move]="row.move"
+              [odds]="row.odds"
+              [priority]="row.priority"
+              [attacking]="true"
+            />
+          } @empty {
+            <p class="py-2 text-sm text-slate-400">{{ t('calc.noDamageMine') }}</p>
+          }
+          <app-move-notes [rows]="others(m.myMoves)" />
+        </section>
+
+        <section
+          class="rounded-xl border border-slate-800 bg-slate-900 p-3"
+          aria-labelledby="their-attacks"
+        >
+          <h3 id="their-attacks" class="font-semibold text-rose-300">
+            {{ t('calc.theirAttacks') }}
+          </h3>
+          @for (row of damaging(m.theirMoves); track row.move) {
+            <app-damage-row
+              [move]="row.move"
+              [odds]="row.odds"
+              [priority]="row.priority"
+              [attacking]="false"
+            />
+          } @empty {
+            <p class="py-2 text-sm text-slate-400">{{ t('calc.noDamageTheirs') }}</p>
+          }
+          <app-move-notes [rows]="others(m.theirMoves)" />
+        </section>
+      </div>
+
+      <app-rival-set-card
+        [matchup]="m"
+        [selected]="selectedCandidate()"
+        [meta]="data.metagame()?.meta"
+        [revealed]="state.revealed()"
+        [mega]="!!state.rivalStatus().mega"
+        [playerName]="state.rivalPlayerName()"
+        (choose)="state.chooseCandidate(state.rival()!, $event)"
+        (reveal)="state.updateRevealed(state.rival()!, $event)"
+      />
+    }
+  </div>
+}

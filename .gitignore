@@ -1,0 +1,8 @@
+/pipeline/target/
+/pipeline/cache/
+node_modules/
+# Los datos y los sprites los genera el pipeline (en local o en el workflow de despliegue);
+# no se guardan en el repositorio.
+/web/public/data/
+/web/public/sprites/
+/web/.vercel/
