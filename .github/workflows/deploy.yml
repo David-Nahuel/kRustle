@@ -1,0 +1,94 @@
+# Genera los datos y despliega la web en Vercel. Los datos (JSON y sprites) no se guardan en el
+# repositorio: se generan aquí en cada ejecución y van solo en el despliegue.
+#
+# - A diario, para recoger los torneos nuevos de Limitless.
+# - En cada push a main que toque la web, el pipeline o este workflow.
+# - A mano desde "Run workflow" (con otro formato si hace falta).
+#
+# El formato se cambia con la variable de repositorio KRUSTLE_FORMAT (Settings → Variables).
+# Secretos necesarios (Settings → Secrets): VERCEL_TOKEN, VERCEL_ORG_ID y VERCEL_PROJECT_ID.
+name: Desplegar
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - "pipeline/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+    inputs:
+      format:
+        description: "Formato de Limitless (M-C, M-D...)"
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # La primera descarga de un formato tarda ~1 h por el rate limit de Limitless (50 peticiones / 5 min).
+    timeout-minutes: 180
+    env:
+      FORMAT: ${{ inputs.format || vars.KRUSTLE_FORMAT || 'M-C' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: pipeline
+
+      # Respuestas de Limitless y sprites ya descargados: cada ejecución solo baja lo nuevo.
+      # GitHub borra una caché que no se usa en 7 días; la ejecución diaria la mantiene viva.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            pipeline/cache
+            web/public/sprites
+          key: pipeline-${{ github.run_id }}
+          restore-keys: pipeline-
+
+      - name: Tests del pipeline
+        run: cargo test --manifest-path pipeline/Cargo.toml
+
+      - name: Datos (Limitless, Smogon, Showdown, PokeAPI) y sprites
+        run: cargo run --release --manifest-path pipeline/Cargo.toml -- update --format "$FORMAT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Tests y build de la web
+        working-directory: web
+        run: |
+          npm ci
+          npm test -- --watch=false
+          npx ng build
+
+      # Build Output API de Vercel: se sube la web ya construida y Vercel solo la sirve.
+      - name: Preparar el despliegue
+        working-directory: web
+        run: |
+          rm -rf .vercel/output
+          mkdir -p .vercel/output
+          cp -r dist/web/browser .vercel/output/static
+          cp vercel/config.json .vercel/output/config.json
+
+      - name: Desplegar en Vercel
+        working-directory: web
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: npx --yes vercel@62.4.0 deploy --prebuilt --prod --yes --token "$VERCEL_TOKEN"

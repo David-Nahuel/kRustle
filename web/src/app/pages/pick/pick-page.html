@@ -1,0 +1,332 @@
+@if (!myTeam().length) {
+  <section
+    class="mx-auto flex max-w-md flex-col items-center gap-4 rounded-xl border border-dashed border-slate-700 p-8 text-center"
+  >
+    <p class="text-slate-300">{{ t('pick.noTeam') }}</p>
+    <a
+      routerLink="/equipo"
+      class="rounded-lg bg-amber-400 px-4 py-2 font-semibold text-slate-950 hover:bg-amber-300"
+      >{{ t('pick.addTeam') }}</a
+    >
+  </section>
+} @else {
+  <div class="flex flex-col gap-5">
+    <section class="grid gap-4 md:grid-cols-2">
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xs font-semibold tracking-wide text-slate-400 uppercase">
+            {{ t('pick.yourTeam') }}
+          </h2>
+          <a routerLink="/equipo" class="text-xs text-slate-400 hover:text-amber-300">{{
+            t('pick.change')
+          }}</a>
+        </div>
+        <ul class="grid grid-cols-6 gap-1.5" [attr.aria-label]="t('pick.yourTeam')">
+          @for (member of myTeam(); track member.species) {
+            <li
+              class="flex h-12 items-center justify-center rounded-lg bg-slate-900 ring-1 ring-slate-800 sm:h-14"
+              [title]="member.species"
+            >
+              <app-sprite [species]="member.species" [size]="40" />
+            </li>
+          }
+        </ul>
+      </div>
+      <app-rival-team-picker />
+    </section>
+
+    @if (state.rivalPlayerId() || searchingPlayer()) {
+      <app-player-search [autofocus]="searchingPlayer()" />
+    } @else {
+      <button
+        type="button"
+        class="-mt-2 self-start text-sm text-slate-400 underline decoration-slate-600 underline-offset-2 hover:text-amber-300"
+        (click)="searchingPlayer.set(true)"
+      >
+        {{ t('pick.searchPlayer') }}
+      </button>
+    }
+
+    @if (data.error(); as error) {
+      <p class="rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 text-rose-200" role="alert">
+        {{ t('data.error', { error }) }}
+      </p>
+    } @else if (!data.metagame()) {
+      <p class="text-slate-400" role="status">{{ t('data.loading') }}</p>
+    } @else if (!analysis()) {
+      <p class="rounded-xl border border-dashed border-slate-700 p-8 text-center text-slate-400">
+        {{ t('pick.addRivals') }}
+      </p>
+    } @else if (analysis(); as a) {
+      @if (plan(); as p) {
+        <!-- Recomendación -->
+        <section
+          class="flex flex-col gap-4 rounded-xl border border-slate-700 bg-slate-900 p-4"
+          aria-labelledby="recommendation"
+        >
+          <header class="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 id="recommendation" class="text-lg font-semibold text-slate-50">
+              {{ t('pick.bring') }}
+            </h2>
+            @if (a.plans.length > 1) {
+              <div
+                class="flex flex-wrap gap-1.5"
+                role="tablist"
+                [attr.aria-label]="t('pick.options')"
+              >
+                @for (option of a.plans; track $index) {
+                  <button
+                    type="button"
+                    role="tab"
+                    [attr.aria-selected]="$index === planIndex()"
+                    (click)="planIndex.set($index)"
+                    [title]="t('pick.coverageTitle', { pct: pct(option.score) })"
+                    class="rounded-lg px-2.5 py-1 text-xs ring-1"
+                    [class]="
+                      $index === planIndex()
+                        ? 'bg-amber-400/15 text-amber-200 ring-amber-400/60'
+                        : 'text-slate-400 ring-slate-700 hover:text-slate-200'
+                    "
+                  >
+                    <span class="text-slate-400">{{ $index + 1 }}</span>
+                    {{ optionLabels()[$index] }}
+                  </button>
+                }
+              </div>
+            }
+          </header>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="flex flex-col gap-2">
+              <h3 class="text-sm font-semibold tracking-wide text-slate-400 uppercase">
+                {{ t('pick.lead') }}
+              </h3>
+              <div class="flex gap-3">
+                @for (i of p.leads; track i) {
+                  <div
+                    class="relative flex flex-1 flex-col items-center gap-1 rounded-lg bg-slate-800 p-2 ring-1 ring-slate-500"
+                  >
+                    @if (i === p.mega) {
+                      <span
+                        class="absolute top-1 right-1 rounded bg-fuchsia-500/80 px-1 text-[10px] font-bold text-white"
+                        >Mega</span
+                      >
+                    } @else if (a.canMega[i]) {
+                      <span class="absolute top-1 right-1 text-[10px] text-slate-400">{{
+                        t('pick.noMega')
+                      }}</span>
+                    }
+                    <app-sprite [species]="myTeam()[i].species" [size]="64" />
+                    <span class="text-sm font-semibold text-slate-100">{{
+                      myTeam()[i].species
+                    }}</span>
+                    @if (roles(i); as r) {
+                      <span class="text-center text-xs text-sky-300">{{ r }}</span>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+            <div class="flex flex-col gap-2">
+              <h3 class="text-sm font-semibold tracking-wide text-slate-400 uppercase">
+                {{ t('pick.back') }}
+              </h3>
+              <div class="flex gap-3">
+                @for (i of p.back; track i) {
+                  <div
+                    class="relative flex flex-1 flex-col items-center gap-1 rounded-lg bg-slate-900 p-2 ring-1 ring-slate-700"
+                  >
+                    @if (i === p.mega) {
+                      <span
+                        class="absolute top-1 right-1 rounded bg-fuchsia-500/80 px-1 text-[10px] font-bold text-white"
+                        >Mega</span
+                      >
+                    } @else if (a.canMega[i]) {
+                      <span class="absolute top-1 right-1 text-[10px] text-slate-400">{{
+                        t('pick.noMega')
+                      }}</span>
+                    }
+                    <app-sprite [species]="myTeam()[i].species" [size]="64" />
+                    <span class="text-sm font-semibold text-slate-100">{{
+                      myTeam()[i].species
+                    }}</span>
+                    @if (roles(i); as r) {
+                      <span class="text-center text-xs text-sky-300">{{ r }}</span>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+          @if (notes().length) {
+            <details
+              class="group rounded-lg bg-slate-800/50 ring-1 ring-slate-700"
+              [open]="notesOpen()"
+              (toggle)="notesOpen.set($any($event.target).open)"
+            >
+              <summary
+                class="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-sm text-slate-300 [&::-webkit-details-marker]:hidden"
+              >
+                <span
+                  class="text-slate-400 transition-transform group-open:rotate-90"
+                  aria-hidden="true"
+                  >▸</span
+                >
+                {{ t('pick.keys') }}
+                <span class="flex gap-1" aria-hidden="true">
+                  @for (note of notes(); track note.text) {
+                    <span class="h-2 w-2 rounded-full {{ note.dot }}"></span>
+                  }
+                </span>
+              </summary>
+              <ul class="flex flex-col gap-1 px-3 pb-2 text-sm text-slate-300">
+                @for (note of notes(); track note.text) {
+                  <li class="flex gap-2">
+                    <span
+                      class="mt-1.5 h-2 w-2 shrink-0 rounded-full {{ note.dot }}"
+                      aria-hidden="true"
+                    ></span>
+                    <span>{{ note.text }}</span>
+                  </li>
+                }
+              </ul>
+            </details>
+          }
+        </section>
+
+        <!-- Cobertura de cada rival -->
+        <section
+          class="rounded-xl border border-slate-800 bg-slate-900 p-3"
+          aria-labelledby="threats"
+        >
+          <h2 id="threats" class="font-semibold text-slate-100">{{ t('pick.coverage') }}</h2>
+          <ul class="mt-1 divide-y divide-slate-800">
+            @for (threat of threats(); track threat.species) {
+              <li class="flex items-center gap-3 py-2">
+                <app-sprite [species]="threat.species" [size]="40" />
+                <div class="min-w-0 flex-1">
+                  <p class="truncate font-medium text-slate-100">{{ threat.species }}</p>
+                  <p class="truncate text-xs text-slate-400">
+                    {{ t('pick.bestAnswer') }}
+                    <button
+                      type="button"
+                      class="text-slate-200 underline decoration-slate-600 underline-offset-2 hover:text-amber-300"
+                      (click)="openInCalculator(threat.answer, threat.rivalIndex)"
+                    >
+                      {{ myTeam()[threat.answer].species }}
+                    </button>
+                    <span class="ml-1">({{ pct(threat.answerChance) }})</span>
+                  </p>
+                </div>
+                <span
+                  class="rounded-md px-2 py-0.5 text-xs font-semibold ring-1 {{
+                    toneClass(threat.coverage)
+                  }}"
+                >
+                  {{ pct(threat.coverage) }}
+                </span>
+              </li>
+            }
+          </ul>
+        </section>
+
+        <!-- Matriz -->
+        <section
+          class="rounded-xl border border-slate-800 bg-slate-900 p-3"
+          aria-labelledby="matrix"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h2 id="matrix" class="font-semibold text-slate-100">{{ t('pick.matrix') }}</h2>
+            @if (speedViews().length) {
+              <div class="flex flex-wrap gap-1.5" role="group" [attr.aria-label]="t('pick.speed')">
+                @for (option of speedViews(); track option.value) {
+                  <button
+                    type="button"
+                    [attr.aria-pressed]="speedView() === option.value"
+                    (click)="speedView.set(option.value)"
+                    class="rounded-lg px-2.5 py-1 text-xs ring-1"
+                    [class]="
+                      speedView() === option.value
+                        ? 'bg-violet-400/15 text-violet-200 ring-violet-400/60'
+                        : 'text-slate-400 ring-slate-700 hover:text-slate-200'
+                    "
+                  >
+                    {{ option.label }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
+          <p class="text-xs text-slate-400">
+            {{ t('pick.matrixHelp') }}
+          </p>
+          <div class="mt-3 overflow-x-auto">
+            <table class="w-full border-separate border-spacing-1 text-center text-sm">
+              <thead>
+                <tr>
+                  <th scope="col">
+                    <span class="sr-only">{{ t('pick.yourPokemon') }}</span>
+                  </th>
+                  @for (rival of a.rivals; track rival) {
+                    <th scope="col" [title]="rival" class="font-normal">
+                      <app-sprite [species]="rival" [size]="32" />
+                      <span class="sr-only">{{ rival }}</span>
+                    </th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of matrix(); track i; let i = $index) {
+                  <tr [class.opacity-40]="!p.bring.includes(i)">
+                    <th scope="row" [title]="myTeam()[i].species" class="font-normal">
+                      <span
+                        class="relative inline-flex rounded-lg p-0.5"
+                        [class.ring-2]="p.bring.includes(i)"
+                        [class.ring-slate-400]="p.bring.includes(i)"
+                      >
+                        <app-sprite [species]="myTeam()[i].species" [size]="32" />
+                        @if (i === p.mega) {
+                          <span
+                            class="absolute -top-1 -right-1 rounded bg-fuchsia-500/80 px-0.5 text-[8px] leading-tight font-bold text-white"
+                            >M</span
+                          >
+                        }
+                      </span>
+                      <span class="sr-only">{{ myTeam()[i].species }}</span>
+                    </th>
+                    @for (duel of row; track j; let j = $index) {
+                      <td>
+                        <button
+                          type="button"
+                          class="h-9 w-full min-w-11 rounded-md font-mono text-xs tabular-nums hover:ring-2 hover:ring-slate-400 {{
+                            cellClass(duel.winChance)
+                          }}"
+                          [title]="
+                            myTeam()[i].species +
+                            ' vs ' +
+                            a.rivals[j] +
+                            ': ' +
+                            (duel.myMove ? i18n.move(duel.myMove) : '—') +
+                            ' / ' +
+                            (duel.theirMove ? i18n.move(duel.theirMove) : '—')
+                          "
+                          (click)="openInCalculator(i, j)"
+                        >
+                          {{ pct(duel.winChance) }}
+                        </button>
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <p class="text-xs text-slate-400">
+          {{ t('pick.footnote') }}
+        </p>
+      }
+    }
+  </div>
+}

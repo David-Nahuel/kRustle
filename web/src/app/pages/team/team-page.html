@@ -1,0 +1,176 @@
+<div class="flex flex-col gap-6">
+  @if (!store.teams().length) {
+    <section
+      class="flex flex-col gap-3 rounded-xl border border-slate-700 bg-slate-900 p-4"
+      aria-labelledby="welcome"
+    >
+      <h1 id="welcome" class="text-lg font-semibold text-slate-50">{{ t('team.welcome') }}</h1>
+      <p class="text-sm text-slate-300">{{ t('team.intro') }}</p>
+      <ol class="grid gap-2 sm:grid-cols-3">
+        @for (step of steps; track step.title; let i = $index) {
+          <li class="flex gap-3 rounded-lg bg-slate-800/50 p-3">
+            <span
+              class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-400 text-sm font-bold text-slate-950"
+              >{{ i + 1 }}</span
+            >
+            <span class="text-sm">
+              <strong class="block text-slate-100">{{ t(step.title) }}</strong>
+              <span class="text-slate-300">{{ t(step.text) }}</span>
+            </span>
+          </li>
+        }
+      </ol>
+    </section>
+  }
+
+  <section class="flex flex-wrap items-center gap-2" [attr.aria-label]="t('team.saved')">
+    @for (team of store.teams(); track team.id) {
+      <div
+        class="flex items-center rounded-full ring-1"
+        [class]="
+          team.id === editingId()
+            ? 'bg-amber-400/15 text-amber-200 ring-amber-400/60'
+            : 'bg-slate-900 text-slate-300 ring-slate-700'
+        "
+      >
+        <button type="button" class="py-1.5 pr-1 pl-3 text-sm" (click)="store.activate(team.id)">
+          {{ team.name }}
+        </button>
+        <button
+          type="button"
+          class="rounded-full px-2 py-1.5 text-slate-400 hover:text-rose-300"
+          [attr.aria-label]="t('team.delete', { name: team.name })"
+          (click)="remove(team.id, team.name)"
+        >
+          ×
+        </button>
+      </div>
+    }
+    <button
+      type="button"
+      class="rounded-full px-3 py-1.5 text-sm text-amber-300 ring-1 ring-amber-400/40 hover:bg-amber-400/10"
+      [class.bg-amber-400/15]="editingId() === null"
+      (click)="newTeam()"
+    >
+      {{ t('team.new') }}
+    </button>
+  </section>
+
+  <section class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+    <div class="flex flex-col gap-3">
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-slate-400">{{ t('team.name') }}</span>
+        <input
+          type="text"
+          [value]="name()"
+          (input)="name.set($any($event.target).value)"
+          [placeholder]="t('team.defaultName')"
+          class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 focus:border-amber-400 focus:outline-none"
+        />
+      </label>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200"
+          [attr.aria-expanded]="pasteOpen()"
+          aria-controls="team-paste"
+          (click)="pasteOpen.set(!pasteOpen())"
+        >
+          <span class="transition-transform" [class.rotate-90]="pasteOpen()" aria-hidden="true"
+            >▸</span
+          >
+          {{ t('team.paste') }}
+        </button>
+        @if (paste().trim()) {
+          <button
+            type="button"
+            class="ml-auto h-8 rounded-lg px-2.5 text-xs text-slate-300 ring-1 ring-slate-700 hover:text-slate-100"
+            (click)="copy()"
+          >
+            {{ t(copied() ? 'team.copied' : 'team.copy') }}
+          </button>
+        }
+      </div>
+      @if (pasteOpen()) {
+        <label class="sr-only" for="team-paste">Pokepaste</label>
+        <textarea
+          id="team-paste"
+          rows="18"
+          spellcheck="false"
+          [value]="paste()"
+          (input)="paste.set($any($event.target).value)"
+          [placeholder]="example"
+          class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 font-mono text-sm leading-relaxed focus:border-amber-400 focus:outline-none"
+        ></textarea>
+      }
+      <div class="flex items-center gap-3">
+        <button
+          type="button"
+          [disabled]="!canSave()"
+          (click)="save()"
+          class="shrink-0 rounded-lg bg-amber-400 px-4 py-2 whitespace-nowrap font-semibold text-slate-950 hover:bg-amber-300 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-400"
+        >
+          {{ t(editingId() === null ? 'team.saveNew' : 'team.saveChanges') }}
+        </button>
+        @if (!dirty() && editingId() !== null) {
+          <a routerLink="/seleccion" class="text-sm text-amber-300 hover:underline">{{
+            t('team.next')
+          }}</a>
+        }
+      </div>
+      <p class="text-xs text-slate-400">{{ t('team.local') }}</p>
+    </div>
+
+    <div class="flex flex-col gap-3">
+      @if (parsed().warnings.length) {
+        <ul
+          class="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-200"
+          role="status"
+        >
+          @for (warning of parsed().warnings; track $index) {
+            <li>{{ warningText(warning) }}</li>
+          }
+        </ul>
+      }
+      @if (parsed().members.length) {
+        <div class="grid gap-3 sm:grid-cols-2">
+          @for (member of parsed().members; track member.species; let i = $index) {
+            @if (editing() === i) {
+              <app-member-editor
+                class="sm:col-span-2"
+                [member]="member"
+                (changed)="updateMember(i, $event)"
+                (removed)="removeMember(i)"
+                (done)="editing.set(null)"
+              />
+            } @else {
+              <div class="relative">
+                <app-member-card [member]="member" />
+                <button
+                  type="button"
+                  class="absolute top-2.5 right-2.5 h-8 rounded-lg bg-slate-900 px-2.5 text-xs text-slate-300 ring-1 ring-slate-700 hover:text-amber-200 hover:ring-amber-400/60"
+                  [attr.aria-label]="t('team.editAria', { name: member.species })"
+                  (click)="editing.set(i)"
+                >
+                  {{ t('team.edit') }}
+                </button>
+              </div>
+            }
+          }
+        </div>
+      } @else {
+        <p class="rounded-xl border border-dashed border-slate-700 p-8 text-center text-slate-400">
+          {{ t('team.empty') }}
+        </p>
+      }
+      @if (parsed().members.length < 6) {
+        <app-species-search
+          [options]="data.speciesOptions()"
+          [exclude]="species()"
+          [placeholder]="t('team.add')"
+          (picked)="addSpecies($event)"
+        />
+      }
+    </div>
+  </section>
+</div>

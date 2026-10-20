@@ -1,0 +1,17 @@
+{
+  "species": {},
+  "moves": {
+    "Fire Blitz": "Flare Blitz",
+    "Clam Mind": "Calm Mind",
+    "utrun": "U-turn",
+    "earth po": "Earth Power",
+    "Dragonite Pulse": "Dragon Pulse"
+  },
+  "items": {},
+  "abilities": {
+    "Technical": "Technician",
+    "Psychic terrain": "Psychic Surge",
+    "From Zero to Hero": "Zero to Hero",
+    "Pixalte": "Pixilate"
+  }
+}

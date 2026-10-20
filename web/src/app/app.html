@@ -1,0 +1,53 @@
+<header class="sticky top-0 z-30 border-b border-slate-800 bg-slate-950/90 backdrop-blur">
+  <div class="mx-auto flex max-w-5xl items-center gap-2 px-4 py-3 sm:gap-4">
+    <a
+      routerLink="/"
+      class="flex shrink-0 items-center gap-2 text-lg font-bold tracking-tight text-amber-400"
+      [attr.aria-label]="t('app.home')"
+    >
+      <img src="logo/Crustle.webp" alt="" width="32" height="32" class="h-8 w-8" />
+      <!-- En móvil basta el logo: el espacio es para la navegación. -->
+      <span class="hidden sm:inline">kRustle</span>
+    </a>
+    <nav class="flex min-w-0 gap-1 text-sm" [attr.aria-label]="t('nav.main')">
+      @for (link of links; track link.path) {
+        <a
+          [routerLink]="link.path"
+          routerLinkActive="bg-slate-800 text-slate-100"
+          class="rounded-lg px-2 py-1.5 whitespace-nowrap text-slate-400 hover:text-slate-100 sm:px-3"
+          >{{ t(link.label) }}</a
+        >
+      }
+    </nav>
+    <div
+      class="ml-auto flex shrink-0 rounded-lg p-0.5 text-xs ring-1 ring-slate-700"
+      role="group"
+      [attr.aria-label]="t('nav.language')"
+    >
+      @for (lang of langs; track lang) {
+        <button
+          type="button"
+          class="rounded-md px-1.5 py-1 font-semibold uppercase"
+          [class]="
+            i18n.lang() === lang
+              ? 'bg-slate-700 text-slate-50'
+              : 'text-slate-400 hover:text-slate-200'
+          "
+          [attr.aria-pressed]="i18n.lang() === lang"
+          [attr.lang]="lang"
+          (click)="i18n.lang.set(lang)"
+        >
+          {{ lang }}
+        </button>
+      }
+    </div>
+  </div>
+</header>
+
+<main class="mx-auto max-w-5xl px-4 py-5">
+  <router-outlet />
+</main>
+
+@if (dataInfo(); as info) {
+  <footer class="mx-auto max-w-5xl px-4 pb-6 text-xs text-slate-400">{{ info }}</footer>
+}
