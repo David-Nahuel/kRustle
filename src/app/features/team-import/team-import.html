@@ -1,0 +1,168 @@
+<section class="min-h-dvh bg-neutral-900 text-neutral-100">
+  <div class="mx-auto flex w-full max-w-7xl flex-col gap-4 px-3 py-3 md:gap-5 md:px-5 md:py-5">
+    <header class="rounded-2xl border border-white/10 bg-neutral-800/85 p-4 md:p-5">
+      <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+        <div>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-300">
+            Team Import
+          </p>
+          <h1 class="mt-1 text-lg font-semibold text-white md:text-2xl">
+            Recomendación de 4 Pokémon
+          </h1>
+          <p class="mt-2 max-w-3xl text-sm text-neutral-400">
+            Pega tu equipo aliado en formato Showdown, selecciona los 6 Pokémon rivales y analiza qué 4 te conviene llevar.
+          </p>
+        </div>
+
+        <div class="flex gap-2">
+          <button
+            type="button"
+            class="rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-neutral-300 transition hover:bg-white/5 hover:text-white"
+            (click)="clearForm()"
+          >
+            Limpiar
+          </button>
+
+          <button
+            type="button"
+            class="rounded-lg bg-cyan-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="isSubmitting()"
+            (click)="analyze()"
+          >
+            {{ isSubmitting() ? 'Analizando...' : 'Analizar recomendación' }}
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)]">
+      <section class="rounded-2xl border border-white/10 bg-neutral-800/85 p-4 md:p-5">
+        <div class="mb-3">
+          <h2 class="text-sm font-semibold uppercase tracking-[0.14em] text-cyan-300">
+            Equipo aliado
+          </h2>
+          <p class="mt-1 text-xs text-neutral-400">
+            Usa el importable de Showdown completo.
+          </p>
+        </div>
+
+        <textarea
+            id="ally-showdown"
+            class="min-h-[420px] w-full rounded-2xl border border-white/10 bg-neutral-900 px-3 py-3 text-sm text-white outline-none transition placeholder:text-neutral-500 focus:border-cyan-400 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.18)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/20 hover:[&::-webkit-scrollbar-thumb]:bg-white/30"
+            [value]="allyShowdown()"
+            (input)="updateAllyShowdown(($any($event.target)).value)"
+            placeholder="Pega aquí el equipo aliado en formato Showdown"
+            spellcheck="false"
+        ></textarea>
+      </section>
+
+      <section class="rounded-2xl border border-white/10 bg-neutral-800/85 p-4 md:p-5">
+        <div class="mb-3">
+          <h2 class="text-sm font-semibold uppercase tracking-[0.14em] text-rose-300">
+            Equipo rival
+          </h2>
+          <p class="mt-1 text-xs text-neutral-400">
+            Selecciona solo los nombres de los 6 Pokémon rivales.
+          </p>
+        </div>
+
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+          @for (slot of enemySlots(); track trackBySlotId($index, slot)) {
+            <div>
+              <label
+                class="mb-1 block text-[11px] font-medium text-neutral-400"
+                [for]="'enemy-slot-' + slot.id"
+              >
+                {{ getSlotLabel($index) }}
+              </label>
+
+              <input
+                class="w-full rounded-xl border px-3 py-2 text-sm text-white outline-none transition"
+                [class.border-rose-400]="isDuplicateName(slot.name)"
+                [class.bg-rose-500/10]="isDuplicateName(slot.name)"
+                [class.border-white/10]="!isDuplicateName(slot.name)"
+                [class.bg-neutral-900]="!isDuplicateName(slot.name)"
+                [id]="'enemy-slot-' + slot.id"
+                [attr.list]="'enemy-options-' + slot.id"
+                [value]="slot.name"
+                (input)="updateEnemyName(slot.id, ($any($event.target)).value)"
+                placeholder="Ej. Flutter Mane"
+              />
+
+              <datalist [id]="'enemy-options-' + slot.id">
+                @for (pokemonName of pokemonOptions(); track pokemonName) {
+                  <option [value]="pokemonName"></option>
+                }
+              </datalist>
+            </div>
+          }
+        </div>
+
+        @if (duplicateEnemyNames().length > 0) {
+          <div class="mt-3 rounded-xl border border-rose-400/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
+            Hay nombres duplicados en el rival: {{ duplicateEnemyNames().join(', ') }}
+          </div>
+        }
+      </section>
+    </div>
+
+    @if (errorMessage()) {
+      <section class="rounded-2xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+        {{ errorMessage() }}
+      </section>
+    }
+
+    @if (result(); as analysis) {
+      <section class="rounded-2xl border border-emerald-400/20 bg-neutral-800/85 p-4 md:p-5">
+        <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
+              Resultado
+            </p>
+            <h2 class="mt-1 text-base font-semibold text-white md:text-xl">
+              4 Pokémon recomendados
+            </h2>
+            <p class="mt-1 text-sm text-neutral-400">
+              Estos son los 4 que la API recomienda llevar para este enfrentamiento.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="!canOpenCalculator()"
+            (click)="openCalculator()"
+          >
+            Abrir calculadora
+          </button>
+        </div>
+
+        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          @for (pokemonName of analysis.recommendedLeadFour; track pokemonName) {
+            <article class="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3">
+              <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-300">
+                Recomendado
+              </p>
+              <h3 class="mt-1 text-sm font-semibold text-white">
+                {{ pokemonName }}
+              </h3>
+            </article>
+          }
+        </div>
+      </section>
+    }
+
+    @if (isSubmitting()) {
+      <section class="rounded-2xl border border-white/10 bg-neutral-800/85 p-4 md:p-5">
+        <div class="animate-pulse space-y-3">
+          <div class="h-3 w-28 rounded bg-white/10"></div>
+          <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            @for (item of [1, 2, 3, 4]; track item) {
+              <div class="h-20 rounded-2xl bg-white/5"></div>
+            }
+          </div>
+        </div>
+      </section>
+    }
+  </div>
+</section>
