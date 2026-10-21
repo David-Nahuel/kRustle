@@ -9,12 +9,16 @@
       <!-- En móvil basta el logo: el espacio es para la navegación. -->
       <span class="hidden sm:inline">kRustle</span>
     </a>
-    <nav class="flex min-w-0 gap-1 text-sm" [attr.aria-label]="t('nav.main')">
+    <!-- Si en una pantalla muy estrecha no cabe, se desplaza en vez de pisar el selector de idioma. -->
+    <nav
+      class="flex min-w-0 gap-0.5 overflow-x-auto text-xs [scrollbar-width:none] sm:gap-1 sm:text-sm"
+      [attr.aria-label]="t('nav.main')"
+    >
       @for (link of links; track link.path) {
         <a
           [routerLink]="link.path"
           routerLinkActive="bg-slate-800 text-slate-100"
-          class="rounded-lg px-2 py-1.5 whitespace-nowrap text-slate-400 hover:text-slate-100 sm:px-3"
+          class="rounded-lg px-1.5 py-1.5 whitespace-nowrap text-slate-400 hover:text-slate-100 sm:px-3"
           >{{ t(link.label) }}</a
         >
       }

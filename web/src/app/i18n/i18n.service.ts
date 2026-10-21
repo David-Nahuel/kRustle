@@ -112,6 +112,9 @@ export class I18n {
       : `${items.slice(0, -1).join(', ')} ${this.t('common.and')} ${items[items.length - 1]}`;
 
   readonly number = (n: number): string => n.toLocaleString(this.locale());
+  /** Porcentaje con un decimal como mucho ("25.1%", "25,1 %"). */
+  readonly percent = (x: number): string =>
+    x.toLocaleString(this.locale(), { style: 'percent', maximumFractionDigits: 1 });
   readonly shortDate = (iso: string): string =>
     new Date(iso).toLocaleDateString(this.locale(), { day: 'numeric', month: 'short' });
   readonly month = (yearMonth: string): string =>

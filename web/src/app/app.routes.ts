@@ -22,6 +22,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/calc/calc-page').then((m) => m.CalcPage),
   },
   {
+    path: 'meta',
+    title: 'title.meta',
+    loadComponent: () => import('./pages/meta/meta-page').then((m) => m.MetaPage),
+  },
+  {
     path: 'equipo',
     title: 'title.team',
     loadComponent: () => import('./pages/team/team-page').then((m) => m.TeamPage),

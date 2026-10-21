@@ -15,6 +15,13 @@ Herramientas para Pokémon Champions (VGC):
   en el paste.
 - **Búsqueda por jugador**: si sabes contra quién juegas (usuario de Limitless), ves sus equipos
   anteriores, cargas uno con un toque y la inferencia usa sus propios sets.
+- **Meta**: uso y winrate de cada Pokémon, si sube o baja (última semana frente a las tres
+  anteriores), sus sets y compañeros habituales, contra qué le va bien o mal según los
+  enfrentamientos reales, y las parejas y tríos más usados. Desde la ficha se añade al equipo rival.
+  Además, un ranking de equipos (los mismos 6 Pokémon llevados al menos 15 veces) por uso, winrate
+  o porcentaje de top 8, con sus mejores resultados y sus sets más llevados: se puede usar como
+  equipo propio (con los Stat Points más comunes del ladder, que Limitless no publica) o cargar
+  como rival.
 - **Modo partida** (dentro de la calculadora): PS, estados y cambios de stat de cada Pokémon, y lo que
   revela el rival (objeto, habilidad, movimientos), que reajusta la inferencia de su set. Se guarda
   en el navegador por si se recarga a mitad de combate.
@@ -85,6 +92,13 @@ cargo test
 - `teams.json`: todos los equipos y enfrentamientos en formato compacto (ver `TeamsFile` en
   `pipeline/src/aggregate.rs`), para inferir sets condicionados al equipo rival concreto.
 - `spreads.json`: repartos de Stat Points por forma de combate y naturaleza, del ladder de Showdown.
+- `meta-analysis.json`: para la sección Meta (`pipeline/src/aggregate/meta.rs`). Tendencia de uso
+  de cada especie, núcleos (parejas y tríos en al menos el 1% de los equipos, con su winrate
+  contra quien no los lleva) y enfrentamientos entre especies con al menos 40 partidas, ordenados
+  sumando 20 partidas al 50% para que unos pocos resultados no manden. Sin mirrors y sin ponderar.
+  También los 50 arquetipos más llevados: winrate contra otros arquetipos, victorias y top 8 en
+  torneos de 32 jugadores o más (con el puesto final de Limitless), mejores resultados por puesto
+  relativo al tamaño del torneo y el set más llevado de cada Pokémon.
 - `../i18n/es.json`: nombres oficiales en español de movimientos, objetos, habilidades, naturalezas
   y tipos (solo los legales), de las tablas de [PokeAPI](https://github.com/PokeAPI/pokeapi)
   emparejadas con los ids de Showdown. Lo que aún no tiene traducción se enseña en inglés.
