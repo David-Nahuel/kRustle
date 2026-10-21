@@ -17,6 +17,8 @@ const en = {
   'footer.data': '{format} · {teams} teams from {tournaments} tournaments · updated {date}',
   'data.error': 'Could not load the format data: {error}',
   'data.loading': 'Loading format data…',
+  'update.ready': 'A new version of kRustle is available.',
+  'update.reload': 'Reload',
 
   // Comunes
   'common.and': 'and',
@@ -293,6 +295,8 @@ const es: Record<MessageKey, string> = {
   'footer.data': '{format} · {teams} equipos de {tournaments} torneos · act. {date}',
   'data.error': 'No se pudieron cargar los datos del formato: {error}',
   'data.loading': 'Cargando datos del formato…',
+  'update.ready': 'Hay una versión nueva de kRustle.',
+  'update.reload': 'Recargar',
 
   'common.and': 'y',
   'common.more': 'Más',
