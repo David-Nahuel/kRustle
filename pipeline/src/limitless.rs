@@ -51,6 +51,9 @@ pub struct Standing {
     pub decklist: Option<serde_json::Value>,
     #[serde(default)]
     pub record: Option<Record>,
+    /// Puesto final (sin él si abandonó o el torneo no lo publica).
+    #[serde(default)]
+    pub placing: Option<u32>,
 }
 
 #[derive(Debug, Default, Clone, Copy, Deserialize)]

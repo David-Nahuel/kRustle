@@ -97,6 +97,81 @@ export interface RosterFile {
   moves?: Record<string, MoveInfo>;
 }
 
+/** `meta-analysis.json`: tendencias, núcleos y enfrentamientos (ver `pipeline/src/aggregate/meta.rs`). */
+export interface MetaAnalysisFile {
+  trendDays: number;
+  baselineDays: number;
+  /** Equipos de la ventana reciente y de la anterior. */
+  recentTeams: number;
+  baselineTeams: number;
+  species: SpeciesMeta[];
+  pairs: CoreStats[];
+  trios: CoreStats[];
+  /** Ausente en datos generados antes de que existiera. */
+  archetypes?: Archetype[];
+}
+
+/** Equipos con los mismos 6 Pokémon. */
+export interface Archetype {
+  /** Por orden alfabético. */
+  species: string[];
+  teams: number;
+  share: number;
+  players: number;
+  /** Partidas contra otros arquetipos (sin mirrors). */
+  games: number;
+  winRate: number | null;
+  /** Veces que se llevó en torneos de 32 jugadores o más, y victorias y top 8 en ellos. */
+  largeEntries: number;
+  wins: number;
+  topCuts: number;
+  /** Mejores resultados, por puesto relativo al tamaño del torneo. */
+  best: Finish[];
+  /** El set más llevado de cada Pokémon. */
+  sets: ArchetypeSet[];
+}
+
+export interface Finish {
+  placing: number;
+  players: number;
+  tournament: string;
+  date: string;
+  player: string;
+}
+
+export interface ArchetypeSet {
+  species: string;
+  item: string | null;
+  ability: string | null;
+  nature: string | null;
+  moves: string[];
+}
+
+export interface SpeciesMeta {
+  species: string;
+  /** Proporción de equipos que la llevan en cada ventana. */
+  recent: number;
+  baseline: number;
+  /** Rivales contra los que mejor le va (de mejor a peor) y peor (de peor a mejor). */
+  best: SpeciesMatchup[];
+  worst: SpeciesMatchup[];
+}
+
+export interface SpeciesMatchup {
+  species: string;
+  games: number;
+  winRate: number;
+}
+
+export interface CoreStats {
+  species: string[];
+  teams: number;
+  share: number;
+  /** Partidas contra equipos que no llevan el núcleo entero. */
+  games: number;
+  winRate: number | null;
+}
+
 export interface DecodedSet {
   species: string;
   item?: string;
@@ -130,6 +205,8 @@ export interface Metagame {
   legalSpecies: string[];
   /** Especie → todas sus habilidades, según `roster.json` (vacío si no lo hay). */
   speciesAbilities: Map<string, string[]>;
+  /** Especie → id de su sprite en `sprites/`, según `roster.json` (vacío si no lo hay). */
+  sprites: Map<string, string>;
   /** Objeto → posición de su icono en `sprites/items.webp`. */
   itemIcons: Map<string, number>;
   moves: MoveCatalog;
@@ -217,6 +294,7 @@ export function buildMetagame(
     playerTeams,
     legalSpecies: roster?.species.map((s) => s.name) ?? [],
     speciesAbilities: new Map(roster?.species.map((s) => [s.name, s.abilities ?? []])),
+    sprites: new Map(roster?.species.map((s) => [s.name, s.sprite])),
     itemIcons: new Map(roster?.items.map((item, i) => [item, i])),
     moves: new Map(Object.entries(roster?.moves ?? {})),
   };

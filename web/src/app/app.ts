@@ -6,11 +6,15 @@ import { MetagameService } from './data/metagame.service';
 import { I18n, LANGS } from './i18n/i18n.service';
 import type { MessageKey } from './i18n/messages';
 
-/** En el orden en que se usan: el equipo, la selección contra el rival y la partida. */
+/**
+ * En el orden en que se usan: el equipo, la selección contra el rival y la partida; al final, el
+ * metajuego, que se consulta aparte.
+ */
 const LINKS: { path: string; label: MessageKey }[] = [
   { path: '/equipo', label: 'nav.team' },
   { path: '/seleccion', label: 'nav.pick' },
   { path: '/calculadora', label: 'nav.calc' },
+  { path: '/meta', label: 'nav.meta' },
 ];
 
 @Component({
