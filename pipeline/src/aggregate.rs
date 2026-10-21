@@ -80,6 +80,8 @@ struct Report {
     excluded_tournaments: BTreeMap<String, String>,
     /// Especie → sets de equipos usados que la llevan sin estar en el roster legal.
     species_not_in_roster: BTreeMap<String, u32>,
+    /// "item: Assault Vest" → veces que se ha quitado de un set por no existir en Champions.
+    not_in_champions: BTreeMap<String, u32>,
 }
 
 pub fn build(
@@ -185,14 +187,40 @@ pub fn build(
 
     // Una especie fuera del roster suele ser una forma mal etiquetada en Limitless ("Floette" por
     // "Floette-Eternal"): en la web no se encuentra al buscarla y la calculadora no la conoce.
+    // Objetos, habilidades y movimientos que no existen en Champions o que la especie no puede
+    // llevar (Assault Vest, Moongeist Beam...) son errores al escribir el equipo o correcciones
+    // aproximadas que dieron con un nombre real de otro juego: se quitan del set.
     if let Some(roster) = roster {
         let legal: HashSet<&str> = roster.species.iter().map(|s| s.name.as_str()).collect();
-        for set in teams.iter().flat_map(|t| &t.sets) {
+        let legal_items: HashSet<&str> = roster.items.iter().map(String::as_str).collect();
+        let legal_moves: HashSet<&str> = roster.moves.keys().map(String::as_str).collect();
+        let mut discard = |name: String| *report.not_in_champions.entry(name).or_default() += 1;
+        for set in teams.iter_mut().flat_map(|t| &mut t.sets) {
             if !legal.contains(set.species.as_str()) {
                 *report
                     .species_not_in_roster
                     .entry(set.species.clone())
                     .or_default() += 1;
+                continue;
+            }
+            let illegal_item = |item: &str| !legal_items.is_empty() && !legal_items.contains(item);
+            if set.item.as_deref().is_some_and(illegal_item) {
+                discard(format!("item: {}", set.item.take().unwrap_or_default()));
+            }
+            let illegal_ability =
+                |a: &str| !dex.allows_ability(&set.species, set.item.as_deref(), a);
+            if set.ability.as_deref().is_some_and(illegal_ability) {
+                let ability = set.ability.take().unwrap_or_default();
+                discard(format!("ability: {ability} ({})", set.species));
+            }
+            if !legal_moves.is_empty() {
+                set.moves.retain(|m| {
+                    let ok = legal_moves.contains(m.as_str());
+                    if !ok {
+                        discard(format!("move: {m}"));
+                    }
+                    ok
+                });
             }
         }
         if !report.species_not_in_roster.is_empty() {
@@ -351,7 +379,8 @@ fn write_step_summary(format: &str, report: &Report, previous_teams: Option<usiz
          - Equipos: {}{previous}\n\
          - Enfrentamientos: {}\n\
          - Equipos descartados: {}\n\
-         - Correcciones aproximadas: {}\n",
+         - Correcciones aproximadas: {}\n\
+         - Nombres quitados por no existir en Champions: {}\n",
         report.tournaments_used,
         report.tournaments_pending_download,
         report.tournaments_off_meta,
@@ -360,6 +389,7 @@ fn write_step_summary(format: &str, report: &Report, previous_teams: Option<usiz
         report.matches_used,
         report.dropped_teams.values().sum::<u32>(),
         report.fuzzy_corrections.len(),
+        report.not_in_champions.values().sum::<u32>(),
     );
     if !report.species_not_in_roster.is_empty() {
         md += "\n**Especies fuera del roster** (¿falta un alias de especie?):\n\n";

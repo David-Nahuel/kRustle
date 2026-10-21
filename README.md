@@ -70,6 +70,10 @@ cargo test
   Se resuelven contra el dex de Showdown: primero alias, luego coincidencia exacta y después
   una búsqueda aproximada conservadora. El informe `pipeline/cache/report-<formato>.json` lista
   las correcciones aplicadas y lo que no se pudo resolver; esto último se añade a `aliases.json`.
+  Después se comprueba contra el roster de Champions: los objetos, movimientos y habilidades que
+  no existen en el juego o que la especie no puede llevar se quitan del set (la habilidad de su
+  mega sí vale, que es la que muchos apuntan), y una especie fuera del roster se avisa porque
+  suele ser una forma mal etiquetada ("Floette" por "Floette-Eternal") que necesita un alias.
 - **Ponderación**: cada equipo pesa `0.5^(días / 14) × (0.5 + winrate suavizado)`, así que lo
   reciente y lo que gana cuenta más.
 
