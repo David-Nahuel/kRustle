@@ -3,6 +3,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { SwUpdate } from '@angular/service-worker';
 
 import { MetagameService } from './data/metagame.service';
+import { UndoService } from './data/undo.service';
 import { I18n, LANGS } from './i18n/i18n.service';
 import type { MessageKey } from './i18n/messages';
 
@@ -24,6 +25,7 @@ const LINKS: { path: string; label: MessageKey }[] = [
 })
 export class App {
   private readonly data = inject(MetagameService);
+  protected readonly undo = inject(UndoService);
   protected readonly i18n = inject(I18n);
   protected readonly t = this.i18n.t;
   protected readonly links = LINKS;
