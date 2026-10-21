@@ -190,8 +190,21 @@ export function toCalcPokemon(c: Combatant): Pokemon {
   };
   const pokemon = new Pokemon(GEN, forme, options);
   if (c.hpPercent === undefined || c.hpPercent >= 100) return pokemon;
-  const curHP = Math.max(1, Math.floor((pokemon.maxHP() * c.hpPercent) / 100));
+  const curHP = Math.max(1, currentHp(pokemon.maxHP(), c.hpPercent));
   return new Pokemon(GEN, forme, { ...options, curHP });
+}
+
+/** PS máximos a nivel 50, con sus SP y naturaleza, en la forma con la que combate. */
+export function maxHp(c: Combatant): number {
+  return toCalcPokemon({ ...c, hpPercent: undefined }).maxHP();
+}
+
+/**
+ * PS a partir del porcentaje guardado. Se redondea (no se trunca) para que los PS de tu Pokémon,
+ * que se guardan como porcentaje, vuelvan exactos: 87 de 175 PS es el 49,71…%, y vuelve a ser 87.
+ */
+export function currentHp(max: number, percent: number): number {
+  return Math.round((max * percent) / 100);
 }
 
 function round1(x: number): number {
