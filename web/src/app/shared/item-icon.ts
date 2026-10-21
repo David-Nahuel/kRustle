@@ -8,11 +8,15 @@ const PER_ROW = 16;
 
 /**
  * Icono de un objeto. Es decorativo (el nombre siempre va al lado): si el objeto no tiene icono,
- * no se pinta nada.
+ * no se pinta ni ocupa sitio (si no, el `gap` de alrededor descentra el nombre).
  */
 @Component({
   selector: 'app-item-icon',
-  host: { class: 'inline-flex shrink-0', 'aria-hidden': 'true' },
+  host: {
+    class: 'inline-flex shrink-0',
+    'aria-hidden': 'true',
+    '[style.display]': "position() ? null : 'none'",
+  },
   template: `
     @if (position(); as pos) {
       <span
