@@ -46,7 +46,7 @@ enum Command {
     },
     /// Genera el favicon y los iconos de la app instalable a partir del logo.
     Icons {
-        /// Imagen del logo (WebP o PNG, cuadrada) [por defecto: web/public/logo/Crustle.webp].
+        /// Imagen del logo (WebP o PNG, cuadrada) [por defecto: web/branding/kRustle-icon.png].
         #[arg(long)]
         logo: Option<PathBuf>,
     },
@@ -217,7 +217,7 @@ fn main() -> Result<()> {
         Command::Fetch { common, fetch } => run_fetch(&common, &fetch),
         Command::Build { common, build } => run_build(&common, &build),
         Command::Icons { logo } => icons::build(
-            &logo.unwrap_or_else(|| repo_root().join("web/public/logo/Crustle.webp")),
+            &logo.unwrap_or_else(|| repo_root().join("web/branding/kRustle-icon.png")),
             &repo_root().join("web/public"),
         ),
         Command::Sprites {

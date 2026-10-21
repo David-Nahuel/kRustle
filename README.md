@@ -67,7 +67,7 @@ cargo run --release -- update              # fetch + build del formato por defec
 cargo run --release -- fetch --format M-C  # solo descargar lo nuevo
 cargo run --release -- build --format M-C  # solo regenerar los JSON desde la caché
 cargo run --release -- sprites             # generar los sprites que falten
-cargo run --release -- icons               # favicon e iconos de la app desde web/public/logo/
+cargo run --release -- icons               # favicon e iconos de la app desde web/branding/kRustle-icon.png
 cargo test
 ```
 
@@ -239,3 +239,10 @@ podido resolver (candidatos para `aliases.json`) y el acierto de la inferencia c
 
 Cuando salga una regulación nueva, cambia la variable de repositorio `KRUSTLE_FORMAT` en GitHub
 (o lanza el workflow *Desplegar* a mano con el formato nuevo).
+
+## Logo
+
+El logo está en `web/branding/`: el PDF original y, sacados de él, el icono (`kRustle-icon.png`,
+transparente, del que salen el favicon y los iconos de la app con `cargo run -- icons`) y el
+logotipo (`kRustle-wordmark.png`, en claro para el fondo oscuro de la app). En `web/public/logo/`
+van las versiones pequeñas en WebP que usa la cabecera. No está en `public` para no publicarlo.
