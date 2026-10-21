@@ -46,8 +46,25 @@ export class TeamStore {
     this.activeId.set(id);
   }
 
-  remove(id: string): void {
-    this.teams.update((teams) => teams.filter((t) => t.id !== id));
+  /**
+   * Borra un equipo. Devuelve cómo deshacerlo: vuelve a su sitio y, si era el activo, lo es otra
+   * vez.
+   */
+  remove(id: string): () => void {
+    const teams = this.teams();
+    const index = teams.findIndex((t) => t.id === id);
+    const team = teams[index];
+    const wasActive = this.active()?.id === id;
+    this.teams.update((list) => list.filter((t) => t.id !== id));
     if (this.activeId() === id) this.activeId.set(null);
+    return () => {
+      if (!team) return;
+      this.teams.update((list) =>
+        list.some((t) => t.id === id)
+          ? list
+          : [...list.slice(0, index), team, ...list.slice(index)],
+      );
+      if (wasActive) this.activeId.set(id);
+    };
   }
 }

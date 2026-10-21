@@ -56,18 +56,36 @@
   <footer class="mx-auto max-w-5xl px-4 pb-6 text-xs text-slate-400">{{ info }}</footer>
 }
 
-@if (updateReady()) {
-  <div
-    class="fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-md items-center gap-3 rounded-xl border border-amber-500/40 bg-slate-900/95 p-3 text-sm text-slate-200 shadow-lg backdrop-blur"
-    role="status"
-  >
-    <span class="min-w-0 flex-1">{{ t('update.ready') }}</span>
-    <button
-      type="button"
-      class="shrink-0 rounded-lg bg-amber-400 px-4 py-2 font-semibold text-slate-950 hover:bg-amber-300"
-      (click)="reload()"
+<!-- Avisos abajo, uno encima de otro: deshacer lo último que se ha quitado y la versión nueva. -->
+<div class="pointer-events-none fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-md flex-col gap-2">
+  @if (undo.pending(); as pending) {
+    <div
+      class="pointer-events-auto flex items-center gap-3 rounded-xl border border-slate-600 bg-slate-900/95 p-3 text-sm text-slate-200 shadow-lg backdrop-blur"
+      role="status"
     >
-      {{ t('update.reload') }}
-    </button>
-  </div>
-}
+      <span class="min-w-0 flex-1">{{ pending.message }}</span>
+      <button
+        type="button"
+        class="shrink-0 rounded-lg px-3 py-1.5 font-semibold text-amber-300 ring-1 ring-amber-400/50 hover:bg-amber-400/10"
+        (click)="undo.undo()"
+      >
+        {{ t('undo.action') }}
+      </button>
+    </div>
+  }
+  @if (updateReady()) {
+    <div
+      class="pointer-events-auto flex items-center gap-3 rounded-xl border border-amber-500/40 bg-slate-900/95 p-3 text-sm text-slate-200 shadow-lg backdrop-blur"
+      role="status"
+    >
+      <span class="min-w-0 flex-1">{{ t('update.ready') }}</span>
+      <button
+        type="button"
+        class="shrink-0 rounded-lg bg-amber-400 px-4 py-2 font-semibold text-slate-950 hover:bg-amber-300"
+        (click)="reload()"
+      >
+        {{ t('update.reload') }}
+      </button>
+    </div>
+  }
+</div>
