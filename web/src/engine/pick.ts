@@ -93,10 +93,13 @@ export function protectionFor(
 }
 
 export interface PickPlan {
-  /** Índices de mi equipo: los 4 que llevo, los 2 que abren y los 2 de atrás. */
+  /**
+   * Índices de mi equipo: los 4 que llevo, los 2 que abren y los 2 de atrás (menos si el equipo
+   * aún no está completo).
+   */
   bring: number[];
-  leads: [number, number];
-  back: [number, number];
+  leads: number[];
+  back: number[];
   score: number;
   /** Lo bien cubierto que está cada rival con estos 4 (0–1), en el orden de `rivals`. */
   coverage: number[];
@@ -309,7 +312,7 @@ export function analyzePick(
     );
     const best = options.reduce((a, b) => (b.score > a.score ? b : a));
     const leads = bestLeads(bring, rivals.length, myTeam, best.win, supportContext);
-    const back = bring.filter((i) => !leads.includes(i)) as [number, number];
+    const back = bring.filter((i) => !leads.includes(i));
     return {
       bring,
       leads,
@@ -639,8 +642,10 @@ function bestLeads(
   team: readonly TeamMember[],
   win: (i: number, j: number) => number,
   context: SupportContext,
-): [number, number] {
-  let best: [number, number] = [bring[0], bring[1]];
+): number[] {
+  // Con un solo Pokémon (equipo a medio montar) abre él solo.
+  if (bring.length < 2) return [...bring];
+  let best = [bring[0], bring[1]];
   let bestScore = -Infinity;
   for (const [a, b] of combinations(bring.length, 2).map(([x, y]) => [bring[x], bring[y]])) {
     let pressure = 0;
