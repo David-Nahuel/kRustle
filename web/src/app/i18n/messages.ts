@@ -337,6 +337,21 @@ const en = {
   'meta.loadRival': 'Load as opponent',
   'meta.rivalLoaded': "Loaded as the opponent's team.",
   'meta.goPick': 'Go to Pick',
+  'meta.tabYourTeam': 'Your team',
+  'meta.threatsHelp':
+    "Your team against the {n} most used Pokémon you don't bring, with their most likely set and Mega Evolved. Damage and speed only: it is not a chance to win.",
+  'meta.noTeam': 'Save your team to see which Pokémon of the format threaten it.',
+  'meta.computing': 'Calculating… {done}/{total}',
+  'meta.answer': 'Answer: {member} · {move} {range}',
+  'meta.noAnswer': 'Nobody 2HKOs it (best: {member} · {move} {range})',
+  'meta.noDamage': 'None of your Pokémon can damage it',
+  'meta.ohkos': 'OHKOs {n} of yours',
+  'meta.faster': 'Faster than it: {n}/{size}',
+  'meta.you': 'You',
+  'meta.them': 'It',
+  'meta.youFirst': 'You move first: {pct}',
+  'meta.openCalc': 'Open in the calc',
+  'meta.rivalFullShort': 'Opponent full',
 };
 
 export type MessageKey = keyof typeof en;
@@ -672,6 +687,21 @@ const es: Record<MessageKey, string> = {
   'meta.loadRival': 'Cargar como rival',
   'meta.rivalLoaded': 'Cargado como equipo rival.',
   'meta.goPick': 'Ir a Selección',
+  'meta.tabYourTeam': 'Tu equipo',
+  'meta.threatsHelp':
+    'Tu equipo contra los {n} Pokémon más usados que no llevas, con su set más probable y megaevolucionados. Solo daño y velocidad: no es una probabilidad de ganar.',
+  'meta.noTeam': 'Guarda tu equipo para ver qué Pokémon del formato lo amenazan.',
+  'meta.computing': 'Calculando… {done}/{total}',
+  'meta.answer': 'Respuesta: {member} · {move} {range}',
+  'meta.noAnswer': 'Nadie lo debilita en dos golpes (lo mejor: {member} · {move} {range})',
+  'meta.noDamage': 'Ninguno de los tuyos puede dañarlo',
+  'meta.ohkos': 'Debilita de un golpe a {n} de los tuyos',
+  'meta.faster': 'Más rápidos que él: {n}/{size}',
+  'meta.you': 'Tú',
+  'meta.them': 'Él',
+  'meta.youFirst': 'Te mueves antes: {pct}',
+  'meta.openCalc': 'Ver en la calculadora',
+  'meta.rivalFullShort': 'Rival completo',
 };
 
 export const MESSAGES = { en, es };
