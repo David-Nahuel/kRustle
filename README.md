@@ -128,6 +128,7 @@ npm install
 npm start        # http://localhost:4200
 npm test         # tests del motor (Vitest)
 npm run validate # acierto de la inferencia de sets con datos reales (M-C por defecto)
+npm run validate-pick -- M-C 400 # si el recomendador predice quién gana (tarda; ver abajo)
 npm run e2e      # pruebas de humo sobre el build (tras `ng build`; usa Edge, o PW_CHANNEL=chrome)
 ```
 
@@ -171,6 +172,14 @@ El cálculo de daño usa la mecánica de Champions de [@smogon/calc](https://git
    ya suelen ir después.
 
 Es una estimación por 1 contra 1: no simula combos de dobles. Tarda ~75 ms en el navegador.
+
+**Lo que no puede hacer: predecir quién gana.** `npm run validate-pick` lo mide con los
+enfrentamientos reales de los últimos 15 torneos (aprendiendo de los anteriores). En M-C, que gane
+quien más puntúa acierta el 52%; las referencias que solo miran datos (winrate de las especies,
+cómo les va a unas contra otras) llegan al 54%, y combinarlas apenas mejora sobre decir siempre
+50%. No es un fallo del modelo: en los datos, que un Pokémon le gane a otro mueve el resultado
+unos ±3 puntos; el resto lo deciden los jugadores. Por eso la app no enseña probabilidades de
+victoria entre equipos, sino daño y velocidad, que sí se calculan con exactitud.
 
 ### Sprites y roster
 
