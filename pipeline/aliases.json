@@ -1,5 +1,7 @@
 {
-  "species": {},
+  "species": {
+    "Floette": "Floette-Eternal"
+  },
   "moves": {
     "Fire Blitz": "Flare Blitz",
     "Clam Mind": "Calm Mind",
