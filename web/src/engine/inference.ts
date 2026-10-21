@@ -39,14 +39,20 @@ export interface InferenceOptions {
   similarityBoost?: number;
   maxCandidates?: number;
   /**
-   * Índice del jugador rival, si se sabe quién es. Sus propios sets mandan sobre todo lo demás:
-   * si ya ha llevado este Pokémon, lo más probable es que lo lleve igual.
+   * Índice del jugador rival, si se sabe quién es. Sus propios sets pesan mucho más: si ya ha
+   * llevado este Pokémon, lo más probable es que lo lleve igual.
    */
   player?: number;
 }
 
-/** Peso extra de los equipos del propio rival: en la práctica, si existen, son los únicos que cuentan. */
-const PLAYER_BOOST = 1e6;
+/**
+ * Peso extra de los equipos del propio rival. Equivale a compartir unos 3 compañeros más
+ * (e^(2,5 × 2,8) ≈ 1000), así que no lo anula todo: si su equipo es antiguo y otro jugador ha
+ * llevado hace poco uno casi idéntico, puede mandar el de otro (lo normal es que el rival se haya
+ * pasado a esa versión). Ajustado con `npm run validate` en M-C: entre 300 y 3000 da el mejor
+ * acierto; con 1e6 (sus sets mandan siempre) el objeto baja del 91% al 89%.
+ */
+const PLAYER_BOOST = 1e3;
 
 /**
  * Infiere el set de un Pokémon rival. Se ponderan más los equipos parecidos al del rival,
