@@ -1,7 +1,7 @@
 import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { emptyStats, getSpecies } from '../../../engine/champions';
+import { emptyStats } from '../../../engine/champions';
 import {
   type PasteWarning,
   type TeamMember,
@@ -111,9 +111,9 @@ export class TeamPage {
     this.editing.set(null);
   }
 
-  /** Un Pokémon nuevo, con su primera habilidad, y se abre para rellenarlo. */
+  /** Un Pokémon nuevo, con la habilidad que más se usa, y se abre para rellenarlo. */
   protected addSpecies(species: string): void {
-    const ability = Object.values(getSpecies(species)?.abilities ?? {})[0];
+    const ability = this.data.abilitiesFor(species)[0];
     this.paste.set(addMember(this.paste(), { species, ability, sps: emptyStats(), moves: [] }));
     this.editing.set(this.parsed().members.length - 1);
   }

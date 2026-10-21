@@ -53,6 +53,9 @@ pub struct RosterSpecies {
     pub name: String,
     /// Id de sprite de Showdown ("rotom-wash").
     pub sprite: String,
+    /// Todas sus habilidades: la calculadora de la web solo trae la primera.
+    #[serde(default)]
+    pub abilities: Vec<String>,
 }
 
 /// `None` si las tablas de Showdown no están en caché.
@@ -75,6 +78,7 @@ pub fn load(cache_root: &Path, dex: &Dex) -> Result<Option<Roster>> {
             Some(RosterSpecies {
                 name: name.to_string(),
                 sprite: sprite.to_string(),
+                abilities: dex.species_abilities(name).to_vec(),
             })
         })
         .collect();

@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { battleForme, emptyStats, megaStonesFor, previewSpecies } from './champions';
+import {
+  abilitiesByUsage,
+  battleForme,
+  emptyStats,
+  megaStonesFor,
+  previewSpecies,
+} from './champions';
 import { type Combatant, calcDamage, damageOverSpreads } from './damage';
+import type { SpeciesUsage } from './metagame';
 
 const sps = (partial: Partial<ReturnType<typeof emptyStats>>) => ({ ...emptyStats(), ...partial });
 
@@ -43,6 +50,26 @@ describe('previewSpecies', () => {
       expect(previewSpecies(name)).toBe('Aegislash');
     }
     expect(previewSpecies('Charizard-Mega-Y')).toBe('Charizard');
+  });
+});
+
+describe('abilitiesByUsage', () => {
+  const usage = (abilities: [string, number][]) => ({ abilities }) as SpeciesUsage;
+
+  it('pone primero la más usada en torneos, aunque no sea la primera del dex', () => {
+    expect(
+      abilitiesByUsage('Rillaboom', usage([['Grassy Surge', 0.99]]), ['Overgrow', 'Grassy Surge']),
+    ).toEqual(['Grassy Surge', 'Overgrow']);
+  });
+
+  it('ignora lo que no es una habilidad de la especie', () => {
+    expect(
+      abilitiesByUsage('Incineroar', usage([['Levitate', 0.5]]), ['Blaze', 'Intimidate']),
+    ).toEqual(['Blaze', 'Intimidate']);
+  });
+
+  it('sin la lista completa, usa la de la calculadora (solo trae la primera)', () => {
+    expect(abilitiesByUsage('Incineroar')).toEqual(['Blaze']);
   });
 });
 
