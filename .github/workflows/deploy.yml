@@ -108,12 +108,15 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       # Build Output API de Vercel: se sube la web ya construida y Vercel solo la sirve.
+      # Las licencias de las librerías (MIT: hay que incluir sus avisos) se publican junto a la
+      # web: el pie de página enlaza a ellas.
       - name: Preparar el despliegue
         working-directory: web
         run: |
           rm -rf .vercel/output
           mkdir -p .vercel/output
           cp -r dist/web/browser .vercel/output/static
+          cp dist/web/3rdpartylicenses.txt .vercel/output/static/
           cp vercel/config.json .vercel/output/config.json
 
       - name: Desplegar en Vercel

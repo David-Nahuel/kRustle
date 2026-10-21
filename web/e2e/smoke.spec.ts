@@ -61,6 +61,8 @@ test('Mi equipo enseña los 6 Pokémon guardados', async ({ page, request }) => 
   for (const species of mine) {
     await expect(page.getByText(species, { exact: true }).first()).toBeVisible();
   }
+  // El aviso de herramienta de fans, no oficial, en el pie de todas las páginas.
+  await expect(page.getByText(/non-profit fan tool, not affiliated/)).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -134,7 +136,7 @@ test('Un equipo del ranking se puede usar como propio y llega a Pick', async ({
   await first.click();
   await expect(page.getByRole('heading', { name: 'Most common sets' })).toBeVisible();
   await page.getByRole('button', { name: 'Use as my team' }).click();
-  await page.getByRole('link', { name: 'Open' }).click();
+  await page.getByRole('link', { name: 'Open', exact: true }).click();
   await expect(page).toHaveURL(/\/equipo$/);
   await page.goto('/seleccion');
   await expect(page.getByRole('heading', { name: 'Bring these 4' })).toBeVisible({
