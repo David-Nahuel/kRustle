@@ -60,10 +60,17 @@ pub fn build(cache_root: &Path, data_dir: &Path, out_dir: &Path) -> Result<()> {
             continue;
         };
         let out = out_dir.join(format!("{id}.webp"));
+        let raw = raw_dir.join(format!("{id}.png"));
+        // Un marcador de "sin imagen" guardado en una ejecución anterior: se descarga de nuevo.
+        if is_placeholder_file(&raw) {
+            fs::remove_file(&raw)?;
+            if out.exists() {
+                fs::remove_file(&out)?;
+            }
+        }
         if out.exists() {
             continue;
         }
-        let raw = raw_dir.join(format!("{id}.png"));
         if !raw.exists() {
             // Un sprite que falla no bloquea el despliegue: la web usa las iniciales y se
             // reintenta en la próxima ejecución.
@@ -189,10 +196,34 @@ fn download(http: &reqwest::blocking::Client, id: &str, path: &Path) -> Result<b
             continue;
         }
         let bytes = response.error_for_status()?.bytes()?;
+        // Algunas formas no tienen modelo HOME y Showdown sirve una Poké Ball gris en su lugar
+        // (Floette-Eternal): cuenta como que no lo tiene y se prueba la siguiente fuente.
+        if is_placeholder(&bytes) {
+            continue;
+        }
         fs::write(path, &bytes)?;
         return Ok(true);
     }
     Ok(false)
+}
+
+/// Huella del marcador "sin imagen" de Showdown (`home-centered`): tamaño y FNV-1a de 64 bits.
+/// Se compara el fichero exacto: por el color no vale, hay Pokémon casi grises (Aggron, Pangoro).
+const PLACEHOLDER_LEN: usize = 1707;
+const PLACEHOLDER_FNV: u64 = 0x0a28_cb6b_e6bd_01af;
+
+fn is_placeholder(bytes: &[u8]) -> bool {
+    bytes.len() == PLACEHOLDER_LEN && fnv1a(bytes) == PLACEHOLDER_FNV
+}
+
+fn is_placeholder_file(path: &Path) -> bool {
+    fs::read(path).is_ok_and(|bytes| is_placeholder(&bytes))
+}
+
+fn fnv1a(bytes: &[u8]) -> u64 {
+    bytes.iter().fold(0xcbf2_9ce4_8422_2325, |hash, &b| {
+        (hash ^ u64::from(b)).wrapping_mul(0x0100_0000_01b3)
+    })
 }
 
 /// Reduce a `SIZE` (sin ampliar los que ya son más pequeños) y guarda en WebP.
@@ -213,4 +244,18 @@ fn convert(raw: &Path, out: &Path) -> Result<()> {
 fn read_json<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T> {
     let text = fs::read_to_string(path).with_context(|| format!("leyendo {}", path.display()))?;
     serde_json::from_str(&text).with_context(|| format!("parseando {}", path.display()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn recognizes_only_the_exact_placeholder() {
+        // FNV-1a de referencia: "a" → 0xaf63dc4c8601ec8c.
+        assert_eq!(fnv1a(b"a"), 0xaf63_dc4c_8601_ec8c);
+        // Mismo tamaño que el marcador pero otro contenido: no lo es.
+        assert!(!is_placeholder(&[0u8; PLACEHOLDER_LEN]));
+        assert!(!is_placeholder(b""));
+    }
 }
