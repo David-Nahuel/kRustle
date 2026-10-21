@@ -84,3 +84,38 @@ test('La calculadora pinta el daño en los dos sentidos', async ({ page, request
   await expect(page.getByText(/\d%/).first()).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('Meta enseña el uso, la ficha de cada Pokémon y los núcleos', async ({ page, request }) => {
+  const { errors } = await setUp(page, request);
+  await page.goto('/meta');
+  const first = page.locator('button[aria-expanded]').first();
+  await expect(first).toBeVisible({ timeout: 30_000 });
+  await first.click();
+  // El más usado tiene muestra de sobra: su ficha trae enfrentamientos.
+  await expect(page.getByRole('heading', { name: 'Struggles against' })).toBeVisible();
+  await page.getByRole('tab', { name: 'Cores' }).click();
+  await expect(page.getByRole('heading', { name: 'Pairs' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Trios' })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('Un equipo del ranking se puede usar como propio y llega a Pick', async ({
+  page,
+  request,
+}) => {
+  const { errors } = await setUp(page, request);
+  await page.goto('/meta');
+  await page.getByRole('tab', { name: 'Teams' }).click();
+  const first = page.locator('[role=tabpanel] button[aria-expanded]').first();
+  await expect(first).toBeVisible({ timeout: 30_000 });
+  await first.click();
+  await expect(page.getByRole('heading', { name: 'Most common sets' })).toBeVisible();
+  await page.getByRole('button', { name: 'Use as my team' }).click();
+  await page.getByRole('link', { name: 'Open' }).click();
+  await expect(page).toHaveURL(/\/equipo$/);
+  await page.goto('/seleccion');
+  await expect(page.getByRole('heading', { name: 'Bring these 4' })).toBeVisible({
+    timeout: 30_000,
+  });
+  expect(errors).toEqual([]);
+});
