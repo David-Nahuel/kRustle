@@ -17,6 +17,11 @@ const en = {
   'title.calc': 'Damage calc',
   'title.meta': 'Metagame',
   'footer.data': '{format} · {teams} teams from {tournaments} tournaments · updated {date}',
+  'footer.dataFrom': 'Data:',
+  'footer.disclaimer':
+    'kRustle is a non-profit fan tool, not affiliated with or endorsed by Nintendo, The Pokémon Company, Game Freak or Creatures. Pokémon, Pokémon names and their images are trademarks and property of their respective owners.',
+  'footer.licenses': 'Open-source licenses',
+  'footer.contact': 'Code and contact (GitHub)',
   'data.error': 'Could not load the format data: {error}',
   'data.loading': 'Loading format data…',
   'data.retry': 'Try again',
@@ -384,6 +389,11 @@ const es: Record<MessageKey, string> = {
   'title.calc': 'Calculadora',
   'title.meta': 'Metajuego',
   'footer.data': '{format} · {teams} equipos de {tournaments} torneos · act. {date}',
+  'footer.dataFrom': 'Datos:',
+  'footer.disclaimer':
+    'kRustle es una herramienta de fans sin ánimo de lucro, sin relación con Nintendo, The Pokémon Company, Game Freak ni Creatures ni respaldada por ellas. Pokémon, los nombres de los Pokémon y sus imágenes son marcas y propiedad de sus respectivos dueños.',
+  'footer.licenses': 'Licencias de código abierto',
+  'footer.contact': 'Código y contacto (GitHub)',
   'data.error': 'No se pudieron cargar los datos del formato: {error}',
   'data.loading': 'Cargando datos del formato…',
   'data.retry': 'Reintentar',

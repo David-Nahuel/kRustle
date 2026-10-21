@@ -67,7 +67,7 @@ cargo run --release -- update              # fetch + build del formato por defec
 cargo run --release -- fetch --format M-C  # solo descargar lo nuevo
 cargo run --release -- build --format M-C  # solo regenerar los JSON desde la caché
 cargo run --release -- sprites             # generar los sprites que falten
-cargo run --release -- icons               # favicon e iconos de la app desde web/public/logo/
+cargo run --release -- icons               # favicon e iconos de la app desde web/branding/kRustle-icon.png
 cargo test
 ```
 
@@ -239,3 +239,29 @@ podido resolver (candidatos para `aliases.json`) y el acierto de la inferencia c
 
 Cuando salga una regulación nueva, cambia la variable de repositorio `KRUSTLE_FORMAT` en GitHub
 (o lanza el workflow *Desplegar* a mano con el formato nuevo).
+
+## Logo
+
+El logo está en `web/branding/`: el PDF original y, sacados de él, el icono (`kRustle-icon.png`,
+transparente, del que salen el favicon y los iconos de la app con `cargo run -- icons`) y el
+logotipo (`kRustle-wordmark.png`, en claro para el fondo oscuro de la app). En `web/public/logo/`
+van las versiones pequeñas en WebP que usa la cabecera. No está en `public` para no publicarlo.
+
+## Aviso legal
+
+kRustle es una herramienta de fans sin ánimo de lucro (sin anuncios ni donaciones), sin relación
+con Nintendo, The Pokémon Company, Game Freak ni Creatures ni respaldada por ellas. Pokémon, los
+nombres de los Pokémon y sus imágenes son marcas y propiedad de sus respectivos dueños. La web lo
+dice en el pie de página.
+
+- **Datos**: [Limitless](https://play.limitlesstcg.com) (torneos y equipos),
+  [Smogon](https://www.smogon.com/stats/) (estadísticas del ladder),
+  [Pokémon Showdown](https://pokemonshowdown.com) (dex, sprites e iconos) y
+  [PokeAPI](https://pokeapi.co) (nombres en español). Todos se enlazan desde la web.
+- **Licencias**: las librerías (Angular, @smogon/calc...) son de código abierto; el build genera
+  `3rdpartylicenses.txt` con sus avisos, se publica con la web y el pie de página enlaza a él.
+- **Datos personales**: la búsqueda por jugador enseña usuarios y resultados públicos de
+  Limitless. Si alguien pide que se quite su nombre (o cualquier contenido), se retira; el pie de
+  página enlaza a este repositorio para pedirlo.
+- **Privacidad**: la web no usa cookies ni analítica; los equipos y la partida se guardan solo en
+  el navegador de cada uno.
