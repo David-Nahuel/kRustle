@@ -1,13 +1,15 @@
 <header class="sticky top-0 z-30 border-b border-slate-800 bg-slate-950/90 backdrop-blur">
   <div class="mx-auto flex max-w-5xl items-center gap-2 px-4 py-3 sm:gap-4">
-    <a
-      routerLink="/"
-      class="flex shrink-0 items-center gap-2 text-lg font-bold tracking-tight text-amber-400"
-      [attr.aria-label]="t('app.home')"
-    >
-      <img src="logo/Crustle.webp" alt="" width="32" height="32" class="h-8 w-8" />
-      <!-- En móvil basta el logo: el espacio es para la navegación. -->
-      <span class="hidden sm:inline">kRustle</span>
+    <a routerLink="/" class="flex shrink-0 items-center gap-2" [attr.aria-label]="t('app.home')">
+      <img src="logo/kRustle-icon.webp" alt="" width="32" height="32" class="h-8 w-8" />
+      <!-- En móvil basta el icono: el espacio es para la navegación. -->
+      <img
+        src="logo/kRustle-wordmark.webp"
+        alt=""
+        width="110"
+        height="24"
+        class="hidden h-6 w-auto sm:block"
+      />
     </a>
     <!-- Si en una pantalla muy estrecha no cabe, se desplaza en vez de pisar el selector de idioma. -->
     <nav
