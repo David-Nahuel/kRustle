@@ -117,7 +117,6 @@ pub fn build(
             .map(|d| (now - d).num_seconds() as f64 / 86_400.0)
             .unwrap_or(0.0)
             .max(0.0);
-        let recency = 0.5f64.powf(age_days / opts.half_life_days);
 
         let mut team_of_player: HashMap<String, usize> = HashMap::new();
         for s in cache.load_standings(&t.id)? {
@@ -127,9 +126,6 @@ pub fn build(
             match parse_team(decklist, &mut norm) {
                 Ok(sets) => {
                     let record = s.record.unwrap_or_default();
-                    // Laplace: un 0-0 cuenta como 50%, así un buen resultado pesa más sin anular al resto.
-                    let win_rate =
-                        (record.wins as f64 + 1.0) / ((record.wins + record.losses) as f64 + 2.0);
                     let player = s.player.to_lowercase();
                     team_of_player.insert(player.clone(), teams.len());
                     teams.push(Team {
@@ -138,7 +134,7 @@ pub fn build(
                         player,
                         record,
                         sets,
-                        weight: recency * (0.5 + win_rate),
+                        weight: team_weight(age_days, opts.half_life_days, record),
                     });
                 }
                 Err(reason) => *report.dropped_teams.entry(reason).or_default() += 1,
@@ -269,6 +265,15 @@ pub fn build(
         println!("    {n:>5}× {name}");
     }
     Ok(())
+}
+
+/// Peso de un equipo: lo reciente y lo que gana cuenta más. La web lo recalcula igual
+/// (`teamWeight` en `web/src/engine/metagame.ts`); `team-weight-cases.json` comprueba que coinciden.
+fn team_weight(age_days: f64, half_life_days: f64, record: Record) -> f64 {
+    let recency = 0.5f64.powf(age_days / half_life_days);
+    // Laplace: un 0-0 cuenta como 50%, así un buen resultado pesa más sin anular al resto.
+    let win_rate = (record.wins as f64 + 1.0) / ((record.wins + record.losses) as f64 + 2.0);
+    recency * (0.5 + win_rate)
 }
 
 /// Equipos de la build anterior del formato, según su informe (si lo hay).
@@ -760,6 +765,40 @@ mod tests {
                     moves: Vec::new(),
                 })
                 .collect(),
+        }
+    }
+
+    #[test]
+    fn team_weight_matches_shared_cases() {
+        #[derive(serde::Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct Case {
+            age_days: f64,
+            half_life_days: f64,
+            wins: u32,
+            losses: u32,
+            weight: f64,
+        }
+        #[derive(serde::Deserialize)]
+        struct Cases {
+            cases: Vec<Case>,
+        }
+        let file: Cases = serde_json::from_str(include_str!("../team-weight-cases.json")).unwrap();
+        for c in file.cases {
+            let record = Record {
+                wins: c.wins,
+                losses: c.losses,
+                ties: 0,
+            };
+            let weight = team_weight(c.age_days, c.half_life_days, record);
+            assert!(
+                (weight - c.weight).abs() < 1e-6,
+                "{} días, {}-{}: {weight} en lugar de {}",
+                c.age_days,
+                c.wins,
+                c.losses,
+                c.weight
+            );
         }
     }
 

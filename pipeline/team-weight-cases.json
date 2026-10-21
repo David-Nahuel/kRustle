@@ -1,0 +1,11 @@
+{
+  "description": "Peso de un equipo según antigüedad y resultado: 0.5^(días / vida media) × (0.5 + winrate suavizado). Lo calculan el pipeline (team_weight en src/aggregate.rs) y la web (teamWeight en web/src/engine/metagame.ts), y los tests de los dos comprueban estos casos: si cambia la fórmula, hay que cambiarla en ambos y actualizar los valores.",
+  "cases": [
+    { "ageDays": 0, "halfLifeDays": 14, "wins": 0, "losses": 0, "weight": 1 },
+    { "ageDays": 14, "halfLifeDays": 14, "wins": 0, "losses": 0, "weight": 0.5 },
+    { "ageDays": 0, "halfLifeDays": 14, "wins": 8, "losses": 0, "weight": 1.4 },
+    { "ageDays": 28, "halfLifeDays": 14, "wins": 3, "losses": 5, "weight": 0.225 },
+    { "ageDays": 7, "halfLifeDays": 10, "wins": 6, "losses": 2, "weight": 0.73868665 },
+    { "ageDays": 60, "halfLifeDays": 14, "wins": 12, "losses": 1, "weight": 0.07007031 }
+  ]
+}
