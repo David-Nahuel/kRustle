@@ -1,4 +1,13 @@
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import {
+  Component,
+  type ElementRef,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 
 import { I18n } from '../i18n/i18n.service';
 import { Sprite } from './sprite';
@@ -65,6 +74,12 @@ export class SpeciesSearch {
   protected readonly query = signal('');
   protected readonly open = signal(false);
   protected readonly active = signal(0);
+  private readonly box = viewChild.required<ElementRef<HTMLInputElement>>('box');
+
+  /** Para llevar al buscador desde fuera (p. ej. al tocar un hueco vacío del equipo). */
+  focus(): void {
+    this.box().nativeElement.focus();
+  }
 
   protected readonly results = computed(() => {
     const q = normalize(this.query());

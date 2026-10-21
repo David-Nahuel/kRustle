@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, output } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 
 import {
   GEN,
@@ -6,14 +6,12 @@ import {
   SP_TOTAL,
   STAT_IDS,
   type StatId,
-  getItem,
-  getMove,
   statTotal,
 } from '../../../engine/champions';
 import type { TeamMember } from '../../../engine/pokepaste';
 import { MetagameService } from '../../data/metagame.service';
 import { I18n } from '../../i18n/i18n.service';
-import { ItemIcon } from '../../shared/item-icon';
+import { NameSearch } from '../../shared/name-search';
 import { Sprite } from '../../shared/sprite';
 
 const MOVE_SLOTS = [0, 1, 2, 3];
@@ -27,7 +25,7 @@ const NATURES = [...GEN.natures];
  */
 @Component({
   selector: 'app-member-editor',
-  imports: [ItemIcon, Sprite],
+  imports: [NameSearch, Sprite],
   template: `
     <article
       class="flex h-full flex-col gap-3 rounded-xl border border-amber-400/50 bg-slate-900 p-3"
@@ -55,22 +53,17 @@ const NATURES = [...GEN.natures];
       </header>
 
       <div class="grid grid-cols-2 gap-2 text-sm">
-        <label class="col-span-2 flex flex-col gap-1">
-          <span class="text-xs text-slate-400">{{ i18n.t('edit.item') }}</span>
-          <span class="flex items-center gap-1.5">
-            <app-item-icon [item]="member().item" />
-            <input
-              type="text"
-              autocomplete="off"
-              spellcheck="false"
-              [placeholder]="i18n.t('common.noItem')"
-              [attr.list]="id() + '-items'"
-              [value]="member().item ? i18n.item(member().item!) : ''"
-              (change)="setItem($any($event.target))"
-              class="h-9 min-w-0 flex-1 rounded-lg bg-slate-950 px-2 ring-1 ring-slate-700 focus:ring-amber-400 focus:outline-none"
-            />
-          </span>
-        </label>
+        <div class="col-span-2 flex flex-col gap-1">
+          <span class="text-xs text-slate-400" aria-hidden="true">{{ i18n.t('edit.item') }}</span>
+          <app-name-search
+            kind="items"
+            [options]="itemOptions()"
+            [value]="member().item"
+            [label]="i18n.t('edit.item')"
+            [placeholder]="i18n.t('common.noItem')"
+            (picked)="patch({ item: $event ?? undefined })"
+          />
+        </div>
         <label class="flex flex-col gap-1">
           <span class="text-xs text-slate-400">{{ i18n.t('edit.ability') }}</span>
           <select
@@ -103,7 +96,15 @@ const NATURES = [...GEN.natures];
       <fieldset class="flex flex-col gap-1.5">
         <legend class="flex w-full justify-between text-xs text-slate-400">
           <span>{{ i18n.t('edit.sp') }}</span>
-          <span [class]="total() === maxTotal ? 'text-emerald-300' : 'text-slate-300'"
+          <span
+            class="transition-colors"
+            [class]="
+              clamped()
+                ? 'text-rose-300'
+                : total() === maxTotal
+                  ? 'text-emerald-300'
+                  : 'text-slate-300'
+            "
             >{{ total() }} / {{ maxTotal }}</span
           >
         </legend>
@@ -118,40 +119,38 @@ const NATURES = [...GEN.natures];
                 [max]="maxPerStat"
                 [value]="member().sps[stat]"
                 (change)="setSp(stat, $any($event.target))"
-                class="h-9 w-full rounded-lg bg-slate-950 text-center font-mono ring-1 ring-slate-700 [appearance:textfield] focus:ring-amber-400 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none"
+                class="h-9 w-full rounded-lg text-center font-mono ring-1 transition-colors [appearance:textfield] focus:outline-none [&::-webkit-inner-spin-button]:appearance-none"
+                [class]="
+                  clamped() === stat
+                    ? 'bg-rose-500/15 text-rose-200 ring-rose-500'
+                    : 'bg-slate-950 ring-slate-700 focus:ring-amber-400'
+                "
               />
             </label>
           }
         </div>
+        @if (clamped()) {
+          <p class="text-xs text-rose-300" role="status">
+            {{ i18n.t('edit.spClamped', { max: maxPerStat, total: maxTotal }) }}
+          </p>
+        }
       </fieldset>
 
       <fieldset class="grid grid-cols-2 gap-1.5">
         <legend class="mb-1 text-xs text-slate-400">{{ i18n.t('edit.moves') }}</legend>
         @for (slot of moveSlots; track slot) {
-          <input
-            type="text"
-            autocomplete="off"
-            spellcheck="false"
-            [attr.aria-label]="i18n.t('edit.move', { n: slot + 1 })"
+          <app-name-search
+            class="min-w-0"
+            kind="moves"
+            [options]="moveOptions()"
+            [exclude]="otherMoves(slot)"
+            [value]="member().moves[slot]"
+            [label]="i18n.t('edit.move', { n: slot + 1 })"
             placeholder="—"
-            [attr.list]="id() + '-moves'"
-            [value]="member().moves[slot] ? i18n.move(member().moves[slot]) : ''"
-            (change)="setMove(slot, $any($event.target))"
-            class="h-9 min-w-0 rounded-lg bg-slate-950 px-2 text-sm ring-1 ring-slate-700 focus:ring-amber-400 focus:outline-none"
+            (picked)="setMove(slot, $event)"
           />
         }
       </fieldset>
-
-      <datalist [id]="id() + '-items'">
-        @for (item of itemOptions(); track item) {
-          <option [value]="item"></option>
-        }
-      </datalist>
-      <datalist [id]="id() + '-moves'">
-        @for (move of moveOptions(); track move) {
-          <option [value]="move"></option>
-        }
-      </datalist>
     </article>
   `,
 })
@@ -180,7 +179,6 @@ export class MemberEditor {
   protected readonly maxPerStat = SP_PER_STAT;
   protected readonly maxTotal = SP_TOTAL;
 
-  protected readonly id = computed(() => `edit-${this.member().species.replace(/\W/g, '')}`);
   protected readonly total = computed(() => statTotal(this.member().sps));
 
   protected readonly abilities = computed(() => {
@@ -194,31 +192,32 @@ export class MemberEditor {
     const common = (shares ?? []).map(([name]) => name);
     return [...common, ...all.filter((name) => !common.includes(name))];
   }
+  /** En inglés: el buscador los enseña traducidos y con su icono o el color de su tipo. */
   protected readonly itemOptions = computed(() =>
     this.usageFirst(
       this.data.metagame()?.usage.get(this.member().species)?.items,
       this.data.itemOptions(),
-    ).map(this.i18n.item),
+    ),
   );
   protected readonly moveOptions = computed(() =>
     this.usageFirst(
       this.data.metagame()?.usage.get(this.member().species)?.moves,
       this.data.moveOptions(),
-    ).map(this.i18n.move),
+    ),
   );
+
+  /** Los movimientos de los otros huecos: no se ofrecen (un movimiento no se repite). */
+  protected otherMoves(slot: number): string[] {
+    return this.member().moves.filter((_, i) => i !== slot);
+  }
 
   protected patch(change: Partial<TeamMember>): void {
     this.changed.emit({ ...this.member(), ...change });
   }
 
-  /** Un objeto que no existe no se guarda: el campo vuelve al que había. */
-  protected setItem(field: HTMLInputElement): void {
-    const text = field.value.trim();
-    if (!text) return this.patch({ item: undefined });
-    const item = getItem(this.i18n.english('items', text))?.name;
-    if (item) this.patch({ item });
-    else field.value = this.member().item ? this.i18n.item(this.member().item!) : '';
-  }
+  /** Stat que se acaba de recortar: se marca en rojo un momento para que se note. */
+  protected readonly clamped = signal<StatId | null>(null);
+  private clampTimer?: ReturnType<typeof setTimeout>;
 
   /** Entre 0 y 32, y sin pasarse de 66 en total: lo que sobre se recorta de este stat. */
   protected setSp(stat: StatId, field: HTMLInputElement): void {
@@ -226,24 +225,22 @@ export class MemberEditor {
     const others = statTotal(sps) - sps[stat];
     const wanted = Math.round(Number(field.value) || 0);
     const value = Math.max(0, Math.min(SP_PER_STAT, SP_TOTAL - others, wanted));
+    if (value < wanted) this.flash(stat);
     field.value = String(value);
     if (value !== sps[stat]) this.patch({ sps: { ...sps, [stat]: value } });
   }
 
-  /** Vacío quita el movimiento; uno que no existe se descarta. */
-  protected setMove(slot: number, field: HTMLInputElement): void {
-    const text = field.value.trim();
+  private flash(stat: StatId): void {
+    clearTimeout(this.clampTimer);
+    this.clamped.set(stat);
+    this.clampTimer = setTimeout(() => this.clamped.set(null), 1500);
+  }
+
+  /** Vacío (`null`) quita el movimiento; en un hueco vacío se añade tras los que hay. */
+  protected setMove(slot: number, move: string | null): void {
     const moves = [...this.member().moves];
-    if (!text) {
-      moves.splice(slot, 1);
-      return this.patch({ moves });
-    }
-    const move = getMove(this.i18n.english('moves', text))?.name;
-    if (!move || (moves.includes(move) && moves[slot] !== move)) {
-      field.value = moves[slot] ? this.i18n.move(moves[slot]) : '';
-      return;
-    }
-    if (slot < moves.length) moves[slot] = move;
+    if (!move) moves.splice(slot, 1);
+    else if (slot < moves.length) moves[slot] = move;
     else moves.push(move);
     this.patch({ moves });
   }

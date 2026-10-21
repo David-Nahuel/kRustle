@@ -54,7 +54,9 @@ import { Sprite } from './sprite';
       <ul class="grid grid-cols-2 gap-1 text-sm">
         @for (move of moves(); track move.name) {
           <li class="flex items-center gap-1.5 truncate">
-            <span class="h-2 w-2 shrink-0 rounded-full {{ typeClass(move.type) }}"></span>
+            <span
+              class="h-2 w-2 shrink-0 rounded-full ring-1 ring-white/25 {{ typeClass(move.type) }}"
+            ></span>
             <span class="truncate text-slate-200">{{ i18n.move(move.name) }}</span>
           </li>
         }

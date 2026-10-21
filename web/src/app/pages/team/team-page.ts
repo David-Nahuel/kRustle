@@ -1,4 +1,4 @@
-import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
+import { Component, computed, inject, linkedSignal, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { emptyStats } from '../../../engine/champions';
@@ -11,6 +11,7 @@ import {
 } from '../../../engine/pokepaste';
 import { MetagameService } from '../../data/metagame.service';
 import { TeamStore } from '../../data/team-store.service';
+import { UndoService } from '../../data/undo.service';
 import { I18n } from '../../i18n/i18n.service';
 import type { MessageKey } from '../../i18n/messages';
 import { MemberCard } from '../../shared/member-card';
@@ -42,6 +43,8 @@ export class TeamPage {
   protected readonly t = this.i18n.t;
   protected readonly store = inject(TeamStore);
   protected readonly data = inject(MetagameService);
+  private readonly undo = inject(UndoService);
+  private readonly search = viewChild(SpeciesSearch);
   protected readonly example = EXAMPLE;
   protected readonly steps = STEPS;
 
@@ -106,9 +109,29 @@ export class TeamPage {
     this.paste.set(updateMember(this.paste(), index, member));
   }
 
+  /** Se quita al momento y se puede deshacer unos segundos (un toque sin querer es fácil). */
   protected removeMember(index: number): void {
-    this.paste.set(updateMember(this.paste(), index, null));
+    const before = this.paste();
+    const teamId = this.editingId();
+    const species = this.parsed().members[index]?.species ?? '';
+    this.paste.set(updateMember(before, index, null));
     this.editing.set(null);
+    this.undo.offer(this.t('undo.memberRemoved', { name: species }), () => {
+      // Solo si sigue en el mismo equipo: si se ha cambiado de equipo, ya no hay nada que tocar.
+      if (this.editingId() !== teamId) return;
+      this.paste.set(before);
+      this.editing.set(index);
+    });
+  }
+
+  /** Huecos que faltan hasta 6, numerados (el primero lleva el buscador). */
+  protected readonly emptySlots = computed(() => {
+    const filled = this.parsed().members.length;
+    return Array.from({ length: Math.max(0, 6 - filled) }, (_, i) => filled + i + 1);
+  });
+
+  protected focusSearch(): void {
+    this.search()?.focus();
   }
 
   /** Un Pokémon nuevo, con la habilidad que más se usa, y se abre para rellenarlo. */
@@ -133,6 +156,6 @@ export class TeamPage {
   }
 
   protected remove(id: string, name: string): void {
-    if (confirm(this.t('team.confirmDelete', { name }))) this.store.remove(id);
+    this.undo.offer(this.t('undo.teamRemoved', { name }), this.store.remove(id));
   }
 }
