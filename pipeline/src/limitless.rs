@@ -257,23 +257,28 @@ pub struct FetchOptions {
     pub max_tournaments: Option<usize>,
 }
 
+/// Fallos seguidos a partir de los cuales se da la API por caída y se deja para la próxima ejecución.
+const MAX_CONSECUTIVE_FAILURES: usize = 3;
+
+/// Descarga los torneos nuevos. Si Limitless falla pero ya hay datos en caché no es un error:
+/// se avisa y se sigue con lo descargado, para que una caída de la API no impida desplegar.
 pub fn fetch(cache_root: &Path, format: &str, opts: &FetchOptions) -> Result<()> {
     let client = Client::new()?;
     let cache = Cache::new(cache_root);
 
-    let mut list: Vec<Tournament> = Vec::new();
-    for page in 1.. {
-        let text = client.get(&format!(
-            "/tournaments?game=VGC&format={format}&limit={PAGE_SIZE}&page={page}"
-        ))?;
-        let batch: Vec<Tournament> = serde_json::from_str(&text)?;
-        let done = batch.len() < PAGE_SIZE;
-        list.extend(batch);
-        if done {
-            break;
+    let list = match fetch_list(&client, format) {
+        Ok(list) => {
+            write_atomic(&cache.list_path(format), &serde_json::to_string(&list)?)?;
+            list
         }
-    }
-    write_atomic(&cache.list_path(format), &serde_json::to_string(&list)?)?;
+        Err(e) if cache.list_path(format).exists() => {
+            crate::warn(&format!(
+                "Limitless no responde ({e:#}): se usan los torneos ya descargados"
+            ));
+            return Ok(());
+        }
+        Err(e) => return Err(e),
+    };
 
     let now = Utc::now();
     let settled = |t: &Tournament| {
@@ -293,6 +298,9 @@ pub fn fetch(cache_root: &Path, format: &str, opts: &FetchOptions) -> Result<()>
         pending.len()
     );
 
+    // Un torneo que falla no debe bloquear a los demás: se salta y se reintenta en la próxima
+    // ejecución (no queda marcado como completo).
+    let mut consecutive_failures = 0;
     for (i, t) in pending.iter().enumerate() {
         println!(
             "[{}/{}] {} ({} jugadores)",
@@ -301,20 +309,56 @@ pub fn fetch(cache_root: &Path, format: &str, opts: &FetchOptions) -> Result<()>
             t.name,
             t.players
         );
-        let dir = cache.tournament_dir(&t.id);
-        let standings = client.get(&format!("/tournaments/{}/standings", t.id))?;
-        write_atomic(&dir.join("standings.json"), &standings)?;
-
-        // Sin listas de equipos los emparejamientos no sirven: nos ahorramos la petición.
-        let parsed: Vec<Standing> = serde_json::from_str(&standings)?;
-        let pairings = if parsed.iter().any(|s| s.decklist.is_some()) {
-            client.get(&format!("/tournaments/{}/pairings", t.id))?
-        } else {
-            "[]".to_string()
-        };
-        write_atomic(&dir.join("pairings.json"), &pairings)?;
+        match fetch_tournament(&client, &cache, &t.id) {
+            Ok(()) => consecutive_failures = 0,
+            Err(e) => {
+                crate::warn(&format!(
+                    "no se pudo descargar {} [{}]: {e:#}",
+                    t.name, t.id
+                ));
+                consecutive_failures += 1;
+                if consecutive_failures >= MAX_CONSECUTIVE_FAILURES {
+                    crate::warn(&format!(
+                        "Limitless falla de forma continuada: quedan {} torneos para la próxima ejecución",
+                        pending.len() - i - 1
+                    ));
+                    break;
+                }
+            }
+        }
     }
     Ok(())
+}
+
+fn fetch_list(client: &Client, format: &str) -> Result<Vec<Tournament>> {
+    let mut list = Vec::new();
+    for page in 1.. {
+        let text = client.get(&format!(
+            "/tournaments?game=VGC&format={format}&limit={PAGE_SIZE}&page={page}"
+        ))?;
+        let batch: Vec<Tournament> = serde_json::from_str(&text)?;
+        let done = batch.len() < PAGE_SIZE;
+        list.extend(batch);
+        if done {
+            break;
+        }
+    }
+    Ok(list)
+}
+
+fn fetch_tournament(client: &Client, cache: &Cache, id: &str) -> Result<()> {
+    let dir = cache.tournament_dir(id);
+    let standings = client.get(&format!("/tournaments/{id}/standings"))?;
+    write_atomic(&dir.join("standings.json"), &standings)?;
+
+    // Sin listas de equipos los emparejamientos no sirven: nos ahorramos la petición.
+    let parsed: Vec<Standing> = serde_json::from_str(&standings)?;
+    let pairings = if parsed.iter().any(|s| s.decklist.is_some()) {
+        client.get(&format!("/tournaments/{id}/pairings"))?
+    } else {
+        "[]".to_string()
+    };
+    write_atomic(&dir.join("pairings.json"), &pairings)
 }
 
 #[cfg(test)]

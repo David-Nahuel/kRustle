@@ -64,9 +64,17 @@ pub fn build(cache_root: &Path, data_dir: &Path, out_dir: &Path) -> Result<()> {
             continue;
         }
         let raw = raw_dir.join(format!("{id}.png"));
-        if !raw.exists() && !download(&http, id, &raw)? {
-            missing.push(name.clone());
-            continue;
+        if !raw.exists() {
+            // Un sprite que falla no bloquea el despliegue: la web usa las iniciales y se
+            // reintenta en la próxima ejecución.
+            let downloaded = download(&http, id, &raw).unwrap_or_else(|e| {
+                crate::warn(&format!("no se pudo descargar el sprite de {name}: {e:#}"));
+                false
+            });
+            if !downloaded {
+                missing.push(name.clone());
+                continue;
+            }
         }
         convert(&raw, &out).with_context(|| format!("convirtiendo el sprite de {name}"))?;
         created += 1;

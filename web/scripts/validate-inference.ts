@@ -17,6 +17,14 @@ const dir = new URL(`../public/data/${format}/`, import.meta.url);
 const meta = JSON.parse(readFileSync(new URL('meta.json', dir), 'utf8'));
 const file: TeamsFile = JSON.parse(readFileSync(new URL('teams.json', dir), 'utf8'));
 
+// Con una regulación recién salida no hay torneos suficientes para separar entrenamiento y prueba.
+if (file.tournaments.length <= HELD_OUT_TOURNAMENTS) {
+  console.log(
+    `${format}: solo ${file.tournaments.length} torneos, hacen falta más de ${HELD_OUT_TOURNAMENTS}`,
+  );
+  process.exit(0);
+}
+
 const cut = file.tournaments.length - HELD_OUT_TOURNAMENTS;
 const inTrain = file.teams.map((t) => t[0] < cut);
 const train: TeamsFile = {
