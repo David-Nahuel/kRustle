@@ -19,15 +19,13 @@ import { MetagameService } from '../../data/metagame.service';
 import { TeamStore } from '../../data/team-store.service';
 import { I18n } from '../../i18n/i18n.service';
 import type { MessageKey } from '../../i18n/messages';
-import { TONE_CLASSES, type Tone, koSummary, pct } from '../../shared/format';
+import { TONE_CLASSES, type Tone, koSummary, pct, winRateTone } from '../../shared/format';
 import { Sprite } from '../../shared/sprite';
 
 /** Con menos equipos en alguna de las dos ventanas, la tendencia es ruido y no se enseña. */
 const MIN_TREND_TEAMS = 300;
 /** Diferencia de uso (en tanto por uno) a partir de la cual se marca que sube o baja. */
 const TREND_STEP = 0.01;
-/** Por debajo de estas partidas, el winrate se enseña atenuado. */
-const MIN_GAMES = 100;
 const PAGE_SIZE = 30;
 /**
  * Al ordenar arquetipos por winrate o por % de top 8 se suman estas partidas o entradas a la
@@ -348,17 +346,13 @@ export class MetaPage {
     });
   }
 
-  /** Verde o naranja solo cuando hay partidas suficientes y se aleja del 50%. */
+  /** Verde o naranja solo si se aleja del 50% con claridad (ver `winRateTone`). */
   protected winRateClass(winRate: number | null, games: number): string {
-    if (winRate === null || games < MIN_GAMES) return 'text-slate-500';
-    const tone: Tone = winRate >= 0.53 ? 'good' : winRate <= 0.47 ? 'bad' : 'neutral';
-    return TONE_CLASSES[tone];
+    return TONE_CLASSES[winRateTone(winRate, games)];
   }
 
   protected gamesTitle(games: number): string {
-    return games < MIN_GAMES
-      ? this.t('meta.fewGames', { n: this.i18n.number(games) })
-      : this.t('meta.games', { n: this.i18n.number(games) });
+    return this.t('meta.games', { n: this.i18n.number(games) });
   }
 
   /** Los `n` primeros de un reparto, con el nombre en el idioma de la interfaz. */

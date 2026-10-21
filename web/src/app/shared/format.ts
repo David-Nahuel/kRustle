@@ -35,6 +35,22 @@ export function koSummary(
  * Colores de un resultado (te mueves antes, cubres bien a un rival...). Verde = bueno, naranja =
  * malo: el rosa queda para identificar al rival y el ámbar para la selección y los avisos.
  */
+/** Lo mínimo que tiene que alejarse un winrate del 50% para destacarlo, aunque sea seguro. */
+const MIN_EDGE = 0.03;
+
+/**
+ * Verde si un winrate está por encima del 50% con claridad, naranja si está por debajo y neutro
+ * si no se puede asegurar: tiene que alejarse al menos 3 puntos y más de lo que daría el azar con
+ * esas partidas (al 95%: ±1,96·√(0,25 / partidas)). Un 76% en 43 partidas cuenta; un 52% en 50, no.
+ */
+export function winRateTone(winRate: number | null, games: number): Tone {
+  if (winRate === null || games <= 0) return 'neutral';
+  const edge = winRate - 0.5;
+  const noise = 1.96 * Math.sqrt(0.25 / games);
+  if (Math.abs(edge) < Math.max(MIN_EDGE, noise)) return 'neutral';
+  return edge > 0 ? 'good' : 'bad';
+}
+
 export const TONE_CLASSES: Record<Tone, string> = {
   good: 'bg-emerald-500/15 text-emerald-300 ring-emerald-500/40',
   warn: 'bg-yellow-500/10 text-yellow-200 ring-yellow-500/40',

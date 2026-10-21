@@ -86,6 +86,7 @@
                 }}
               </li>
               <li>{{ t('meta.legendWinRate') }}</li>
+              <li>{{ t('meta.legendColors') }}</li>
             </ul>
           </details>
 
@@ -182,6 +183,7 @@
 
                     @if (row.meta) {
                       @if (row.meta.best.length || row.meta.worst.length) {
+                        <p class="-mb-1 text-xs text-slate-400">{{ t('meta.colorsShort') }}</p>
                         <div class="grid gap-3 sm:grid-cols-2">
                           @for (
                             side of [
@@ -207,8 +209,13 @@
                                       <span class="min-w-0 truncate text-slate-200">{{
                                         m.species
                                       }}</span>
+                                      <!-- A la vista: en el móvil no hay "title". -->
                                       <span
-                                        class="ml-auto rounded px-1.5 py-0.5 text-xs tabular-nums ring-1 {{
+                                        class="ml-auto shrink-0 text-xs text-slate-500 tabular-nums"
+                                        >{{ gamesTitle(m.games) }}</span
+                                      >
+                                      <span
+                                        class="shrink-0 rounded px-1.5 py-0.5 text-xs tabular-nums ring-1 {{
                                           winRateClass(m.winRate, m.games)
                                         }}"
                                         >{{ i18n.percent(m.winRate) }}</span
