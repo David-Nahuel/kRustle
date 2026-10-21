@@ -312,11 +312,14 @@ const en = {
     'Trend: how many percentage points its usage went up or down in the last {days} days against the {baseline} before.',
   'meta.legendWinRate':
     "Win rate: share of games won by teams that bring it against teams that don't (mirrors left out).",
+  'meta.legendColors':
+    'Win rates in green or orange are clearly above or below 50%: at least 3 points, and more than chance would give with that many games. No color: it cannot be told apart from chance.',
   'meta.detailHelp': 'Percentages over the teams that bring {name}.',
+  'meta.colorsShort':
+    'In color, win rates clearly above or below 50%; without color, the games are too few to tell.',
   'meta.usageShort': '{pct} usage',
   'meta.trendTitle': '{from} → {to}: last {days} days against the {baseline} before',
   'meta.games': '{n} games',
-  'meta.fewGames': 'Only {n} games: not reliable',
   'meta.showMore': 'Show more',
   'meta.items': 'Items',
   'meta.abilities': 'Abilities',
@@ -332,10 +335,10 @@ const en = {
   'meta.pairs': 'Pairs',
   'meta.trios': 'Trios',
   'meta.coresHelp':
-    'The ones in at least 1% of teams. Win rate against teams that do not bring the whole core.',
+    'The ones in at least 1% of teams. Win rate against teams that do not bring the whole core; in color when it is clearly above or below 50%.',
   'meta.tabTeams': 'Teams',
   'meta.teamsHelp':
-    'Teams with the same 6 Pokémon, brought at least 15 times. Wins and top 8s count in tournaments of 32+ players.',
+    'Teams with the same 6 Pokémon, brought at least 15 times. Wins and top 8s count in tournaments of 32+ players. Win rate in color when it is clearly above or below 50%.',
   'meta.sortBy': 'Sort by',
   'meta.sortUsage': 'Most used',
   'meta.sortWinRate': 'Win rate',
@@ -682,11 +685,14 @@ const es: Record<MessageKey, string> = {
     'Tendencia: cuántos puntos sube o baja su uso en los últimos {days} días frente a los {baseline} anteriores.',
   'meta.legendWinRate':
     'Winrate: % de partidas que ganan los equipos que lo llevan contra los que no (sin contar mirrors).',
+  'meta.legendColors':
+    'Winrate en verde o naranja: claramente por encima o por debajo del 50 %, al menos 3 puntos y más de lo que daría el azar con esas partidas. Sin color: no se puede distinguir del azar.',
   'meta.detailHelp': 'Porcentajes sobre los equipos que llevan a {name}.',
+  'meta.colorsShort':
+    'En color, los winrates claramente por encima o por debajo del 50 %; sin color, hay pocas partidas para asegurarlo.',
   'meta.usageShort': '{pct} de uso',
   'meta.trendTitle': '{from} → {to}: últimos {days} días frente a los {baseline} anteriores',
   'meta.games': '{n} partidas',
-  'meta.fewGames': 'Solo {n} partidas: poco fiable',
   'meta.showMore': 'Ver más',
   'meta.items': 'Objetos',
   'meta.abilities': 'Habilidades',
@@ -702,10 +708,10 @@ const es: Record<MessageKey, string> = {
   'meta.pairs': 'Parejas',
   'meta.trios': 'Tríos',
   'meta.coresHelp':
-    'Los que llevan al menos el 1% de los equipos. Winrate contra equipos que no llevan el núcleo entero.',
+    'Los que llevan al menos el 1% de los equipos. Winrate contra equipos que no llevan el núcleo entero; en color cuando se aleja claramente del 50 %.',
   'meta.tabTeams': 'Equipos',
   'meta.teamsHelp':
-    'Equipos con los mismos 6 Pokémon, llevados al menos 15 veces. Las victorias y los top 8 cuentan en torneos de 32 jugadores o más.',
+    'Equipos con los mismos 6 Pokémon, llevados al menos 15 veces. Las victorias y los top 8 cuentan en torneos de 32 jugadores o más. Winrate en color cuando se aleja claramente del 50 %.',
   'meta.sortBy': 'Ordenar por',
   'meta.sortUsage': 'Más usados',
   'meta.sortWinRate': 'Winrate',
