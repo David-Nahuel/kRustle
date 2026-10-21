@@ -7,7 +7,7 @@ import {
   megaStonesFor,
   previewSpecies,
 } from './champions';
-import { type Combatant, calcDamage, damageOverSpreads } from './damage';
+import { type Combatant, calcDamage, currentHp, damageOverSpreads, maxHp } from './damage';
 import type { SpeciesUsage } from './metagame';
 
 const sps = (partial: Partial<ReturnType<typeof emptyStats>>) => ({ ...emptyStats(), ...partial });
@@ -134,6 +134,12 @@ describe('calcDamage', () => {
     const full = calcDamage(garchomp, incineroar, 'Earthquake')!;
     const low = calcDamage(garchomp, { ...incineroar, hpPercent: 30 }, 'Earthquake')!;
     expect(low.hitsToKo).toBeLessThan(full.hitsToKo);
+  });
+
+  it('los PS escritos a mano vuelven exactos tras guardarse como porcentaje', () => {
+    const max = maxHp(incineroar);
+    expect(max).toBeGreaterThan(150);
+    for (let hp = 0; hp <= max; hp++) expect(currentHp(max, (hp / max) * 100)).toBe(hp);
   });
 
   it('devuelve null para movimientos de estado o desconocidos', () => {

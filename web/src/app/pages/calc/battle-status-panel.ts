@@ -1,6 +1,7 @@
 import { Component, computed, inject, input, output, signal } from '@angular/core';
 
 import { type StatId, battleAbility, battleForme } from '../../../engine/champions';
+import { currentHp } from '../../../engine/damage';
 import type { BattleStatus } from '../../../engine/matchup';
 import { type Actor, addBoosts, intimidateEffect } from '../../../engine/moves';
 import { I18n } from '../../i18n/i18n.service';
@@ -40,9 +41,29 @@ const BOOSTABLE: StatId[] = ['atk', 'def', 'spa', 'spd', 'spe'];
             >
               {{ forme() }}
             </h3>
-            <span class="shrink-0 font-mono text-sm tabular-nums">
-              {{ fainted() ? 'KO' : status().hp + '%' }}
-            </span>
+            @if (fainted()) {
+              <span class="shrink-0 font-mono text-sm tabular-nums">KO</span>
+            } @else if (maxHp(); as max) {
+              <!-- Los tuyos, en PS (los ves exactos en el juego); el rival, en porcentaje. -->
+              <span class="flex shrink-0 items-baseline gap-1 font-mono text-sm tabular-nums">
+                <label class="sr-only" [for]="id() + '-hp-points'">{{
+                  i18n.t('panel.hpPoints', { name: species() })
+                }}</label>
+                <input
+                  [id]="id() + '-hp-points'"
+                  type="number"
+                  inputmode="numeric"
+                  min="0"
+                  [max]="max"
+                  [value]="points()"
+                  (change)="setPoints($any($event.target))"
+                  class="h-7 w-14 rounded-md bg-slate-950 px-1 text-right ring-1 ring-slate-700 [appearance:textfield] focus:ring-amber-400 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <span class="text-slate-400">/ {{ max }} {{ i18n.t('panel.hpUnit') }}</span>
+              </span>
+            } @else {
+              <span class="shrink-0 font-mono text-sm tabular-nums">{{ status().hp }}%</span>
+            }
           </div>
           <!-- La barra de PS es el propio control: se arrastra o se toca donde se quiera. -->
           <div
@@ -52,16 +73,16 @@ const BOOSTABLE: StatId[] = ['atk', 'def', 'spa', 'spd', 'spe'];
               <div class="h-full rounded-full {{ hpColor() }}" [style.width.%]="status().hp"></div>
             </div>
             <label class="sr-only" [for]="id() + '-hp'">{{
-              i18n.t('panel.hpLabel', { name: species() })
+              i18n.t(maxHp() ? 'panel.hpPoints' : 'panel.hpLabel', { name: species() })
             }}</label>
             <input
               [id]="id() + '-hp'"
               type="range"
               min="0"
-              max="100"
+              [max]="maxHp() ?? 100"
               step="1"
-              [value]="status().hp"
-              (input)="set({ hp: +$any($event.target).value })"
+              [value]="points() ?? status().hp"
+              (input)="setFromBar(+$any($event.target).value)"
               class="absolute inset-0 w-full cursor-pointer opacity-0"
             />
           </div>
@@ -145,9 +166,10 @@ const BOOSTABLE: StatId[] = ['atk', 'def', 'spa', 'spd', 'spe'];
                 type="button"
                 class="flex-1"
                 [class]="bigChip(status().hp === hp)"
+                [title]="hp + '%'"
                 (click)="set({ hp })"
               >
-                {{ hp }}%
+                {{ shortcutLabel(hp) }}
               </button>
             }
             <button
@@ -223,6 +245,11 @@ export class BattleStatusPanel {
   readonly status = input.required<BattleStatus>();
   /** Mi Pokémon (verde) o el rival (rojo). */
   readonly mine = input(false);
+  /**
+   * PS máximos, si se saben (los de tu equipo): entonces la vida se ve y se edita en PS. Se sigue
+   * guardando en porcentaje, que es lo que usan los cálculos y lo único que se ve del rival.
+   */
+  readonly maxHp = input<number>();
   /** Objeto y habilidad de este Pokémon (para Unburden e Intimidate). */
   readonly self = input<Actor>();
   /** Habilidad del Pokémon de enfrente: si es Intimidate, se ofrece aplicarlo. */
@@ -323,6 +350,33 @@ export class BattleStatusPanel {
 
   protected stage(stat: StatId): number {
     return this.status().boosts[stat] ?? 0;
+  }
+
+  /** PS actuales (solo si se saben los máximos). */
+  protected readonly points = computed(() => {
+    const max = this.maxHp();
+    return max ? currentHp(max, this.status().hp) : undefined;
+  });
+
+  /** La barra va en PS si se saben los máximos y, si no, en porcentaje. */
+  protected setFromBar(value: number): void {
+    const max = this.maxHp();
+    this.set({ hp: max ? (value / max) * 100 : value });
+  }
+
+  /** PS escritos a mano: entre 0 y los máximos. */
+  protected setPoints(field: HTMLInputElement): void {
+    const max = this.maxHp();
+    if (!max) return;
+    const points = Math.max(0, Math.min(max, Math.round(Number(field.value) || 0)));
+    field.value = String(points);
+    this.set({ hp: (points / max) * 100 });
+  }
+
+  /** Atajos de "Más": en PS para los tuyos (con el porcentaje en el título), en % para el rival. */
+  protected shortcutLabel(percent: number): string {
+    const max = this.maxHp();
+    return max ? String(currentHp(max, percent)) : `${percent}%`;
   }
 
   protected set(patch: Partial<BattleStatus>): void {
