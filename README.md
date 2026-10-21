@@ -110,6 +110,7 @@ npm install
 npm start        # http://localhost:4200
 npm test         # tests del motor (Vitest)
 npm run validate # acierto de la inferencia de sets con datos reales (M-C por defecto)
+npm run e2e      # pruebas de humo sobre el build (tras `ng build`; usa Edge, o PW_CHANNEL=chrome)
 ```
 
 `npm run validate -- M-C 0,1,2.5` compara varios valores de `similarityBoost`. Conviene repetirlo
@@ -169,14 +170,30 @@ Es una estimación por 1 contra 1: no simula combos de dobles. Tarda ~75 ms en e
 La web se publica en Vercel desde GitHub Actions (`.github/workflows/deploy.yml`), a diario, en
 cada push a `main` que toque la web o el pipeline, y a mano desde *Run workflow*:
 
-1. Restaura la caché de Actions (respuestas de Limitless y sprites ya descargados).
-2. Tests del pipeline y `update`: datos del formato, roster, nombres traducidos y sprites.
-3. Tests y build de la web.
-4. Sube `dist/` a Vercel ya construido (`vercel deploy --prebuilt`, Build Output API con la
+1. Comprobaciones (`.github/workflows/ci.yml`, que también corre en cada pull request): `cargo fmt`,
+   clippy y tests del pipeline; Prettier, tests y build de la web. En la ejecución diaria se
+   saltan, porque el código no cambia.
+2. Restaura la caché de Actions (respuestas de Limitless y sprites ya descargados).
+3. `update`: datos del formato, roster, nombres traducidos y sprites.
+4. Build de la web y prueba de humo (`npm run e2e`): con los datos nuevos, cada página arranca y
+   pinta lo principal sin errores. Si falla, no se publica.
+5. Sube `dist/` a Vercel ya construido (`vercel deploy --prebuilt`, Build Output API con la
    config de `web/vercel/config.json`): Vercel no compila nada, solo sirve los ficheros.
 
 Nada de lo generado se guarda en el repositorio. Si la caché de Actions se pierde (GitHub la
 borra tras 7 días sin uso), la siguiente ejecución vuelve a descargar los torneos (~1 h).
+
+Si Limitless o Smogon no responden, o falla algún torneo o sprite, el pipeline sigue con lo que
+haya en caché y lo avisa con una anotación en el resumen de la ejecución: una caída de una
+fuente externa no impide desplegar. Solo falla si no hay nada en caché con lo que trabajar.
+
+Antes de escribir los datos, `build` comprueba la muestra: si sale vacía o con más de un 25% menos
+de equipos que la build anterior (los equipos se acumulan durante el formato, así que eso indica un
+problema), falla y se queda publicada la versión anterior. Si la caída es correcta, se repite con
+`--accept-drop` (en GitHub, *Run workflow* marcando *Aceptar caída de datos*).
+
+El resumen de cada ejecución en GitHub muestra el tamaño de la muestra, los nombres que no se han
+podido resolver (candidatos para `aliases.json`) y el acierto de la inferencia con los datos nuevos.
 
 ### Puesta en marcha
 

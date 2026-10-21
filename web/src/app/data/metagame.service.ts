@@ -12,7 +12,8 @@ import {
 
 async function getJson<T>(path: string, signal: AbortSignal): Promise<T> {
   const response = await fetch(`data/${path}`, { signal });
-  if (!response.ok) throw new Error(`No se pudo cargar ${path} (${response.status})`);
+  // Sin texto propio: la interfaz lo envuelve en su idioma ('data.error').
+  if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
   return response.json() as Promise<T>;
 }
 
@@ -37,6 +38,11 @@ export class MetagameService {
   readonly metagame = computed(() => (this.data.hasValue() ? this.data.value() : undefined));
   readonly loading = this.data.isLoading;
   readonly error = computed(() => this.data.error()?.message);
+
+  /** Vuelve a intentar la carga (p. ej. tras perder la conexión). */
+  reload(): void {
+    this.data.reload();
+  }
 
   /** Objetos y movimientos legales en Champions, por orden alfabético (para el editor de equipo). */
   readonly itemOptions = computed(() => [...(this.metagame()?.itemIcons.keys() ?? [])].sort());

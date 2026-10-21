@@ -1,0 +1,62 @@
+# Formato, lint, tests y build del pipeline y de la web, sin datos ni despliegue.
+#
+# - En cada pull request.
+# - Desde el workflow de despliegue (deploy.yml), antes de publicar un cambio de código.
+name: Comprobaciones
+
+on:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: pipeline
+
+      - name: Formato
+        run: cargo fmt --manifest-path pipeline/Cargo.toml --check
+
+      - name: Clippy
+        run: cargo clippy --manifest-path pipeline/Cargo.toml --all-targets -- -D warnings
+
+      - name: Tests
+        run: cargo test --manifest-path pipeline/Cargo.toml
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+
+      # Solo el código: los JSON de configuración de Angular siguen su propio estilo.
+      - name: Formato
+        run: npx prettier --check src scripts e2e playwright.config.ts
+
+      - name: Tests
+        run: npm test -- --watch=false
+
+      # Sin datos: comprueba que compila; el build que se publica lo hace deploy.yml.
+      - name: Build
+        run: npx ng build
