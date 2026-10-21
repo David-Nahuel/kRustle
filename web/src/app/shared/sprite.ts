@@ -1,7 +1,8 @@
-import { Component, computed, input, linkedSignal } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal } from '@angular/core';
 import { toID } from '@smogon/calc';
 
 import { GEN } from '../../engine/champions';
+import { MetagameService } from '../data/metagame.service';
 
 /**
  * Primero los sprites propios (los genera el pipeline en `public/sprites`); Showdown solo se usa
@@ -55,7 +56,16 @@ export function spriteId(name: string): string {
 export class Sprite {
   readonly species = input.required<string>();
   readonly size = input(48);
+  private readonly data = inject(MetagameService);
+  private readonly sprites = computed(() => this.data.metagame()?.sprites);
 
   protected readonly source = linkedSignal({ source: this.species, computation: () => 0 });
-  protected readonly src = computed(() => SOURCES[this.source()]?.(spriteId(this.species())));
+  /**
+   * El id con el que el pipeline generó el sprite (`roster.json`) y, si no está, el que se deduce
+   * del nombre: la calculadora no sabe que Floette-Eternal es una forma ("floette-eternal").
+   */
+  protected readonly src = computed(() => {
+    const id = this.sprites()?.get(this.species()) ?? spriteId(this.species());
+    return SOURCES[this.source()]?.(id);
+  });
 }

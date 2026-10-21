@@ -130,6 +130,8 @@ export interface Metagame {
   legalSpecies: string[];
   /** Especie → todas sus habilidades, según `roster.json` (vacío si no lo hay). */
   speciesAbilities: Map<string, string[]>;
+  /** Especie → id de su sprite en `sprites/`, según `roster.json` (vacío si no lo hay). */
+  sprites: Map<string, string>;
   /** Objeto → posición de su icono en `sprites/items.webp`. */
   itemIcons: Map<string, number>;
   moves: MoveCatalog;
@@ -217,6 +219,7 @@ export function buildMetagame(
     playerTeams,
     legalSpecies: roster?.species.map((s) => s.name) ?? [],
     speciesAbilities: new Map(roster?.species.map((s) => [s.name, s.abilities ?? []])),
+    sprites: new Map(roster?.species.map((s) => [s.name, s.sprite])),
     itemIcons: new Map(roster?.items.map((item, i) => [item, i])),
     moves: new Map(Object.entries(roster?.moves ?? {})),
   };
