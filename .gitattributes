@@ -1,0 +1,3 @@
+# Texto siempre con LF, también al hacer checkout en Windows: Prettier y rustfmt esperan LF y,
+# con CRLF, `prettier --check` falla en local aunque pase en CI.
+* text=auto eol=lf
