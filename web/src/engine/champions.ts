@@ -1,5 +1,7 @@
 import { Generations, toID } from '@smogon/calc';
 
+import type { SpeciesUsage } from './metagame';
+
 /** Pokémon Champions es la "generación 0" de @smogon/calc: nivel 50 fijo y Stat Points en lugar de EVs. */
 export const GEN = Generations.get(0);
 
@@ -19,8 +21,16 @@ export function statTotal(stats: Stats): number {
   return STAT_IDS.reduce((sum, s) => sum + stats[s], 0);
 }
 
+/**
+ * Pokémon que se ven en team preview con un nombre que la calculadora no conoce, porque solo trae
+ * sus formas de combate. Aegislash ataca en forma Blade y se defiende en Shield (Stance Change),
+ * que es justo "Aegislash-Both". `previewSpecies` deshace el cambio.
+ */
+const CALC_FORMES: Readonly<Record<string, string>> = { Aegislash: 'Aegislash-Both' };
+const CALC_IDS = new Map(Object.entries(CALC_FORMES).map(([name, forme]) => [toID(name), forme]));
+
 export function getSpecies(name: string) {
-  return GEN.species.get(toID(name));
+  return GEN.species.get(toID(CALC_IDS.get(toID(name)) ?? name));
 }
 
 export function getMove(name: string) {
@@ -66,6 +76,19 @@ export function battleAbility(
   return getSpecies(forme)?.abilities?.[0] || ability;
 }
 
+/**
+ * Habilidades posibles de la especie, las más usadas en torneos primero: un Rillaboom nuevo
+ * empieza con Grassy Surge, no con Overgrow, que es la primera del dex. `all` es la lista
+ * completa (de `roster.json`); sin ella, solo la que trae la calculadora.
+ */
+export function abilitiesByUsage(species: string, usage?: SpeciesUsage, all?: string[]): string[] {
+  const legal: string[] = all?.length ? all : Object.values(getSpecies(species)?.abilities ?? {});
+  const used = (usage?.abilities ?? [])
+    .map(([ability]) => ability)
+    .filter((ability) => legal.includes(ability));
+  return [...used, ...legal.filter((ability) => !used.includes(ability))];
+}
+
 /** Piedras con las que puede megaevolucionar la especie (Charizard → Charizardite X e Y). */
 export function megaStonesFor(species: string): string[] {
   const baseName = getSpecies(species)?.name ?? species;
@@ -84,6 +107,11 @@ export function megaStonesFor(species: string): string[] {
 export function previewSpecies(name: string): string {
   const species = getSpecies(name);
   if (!species) return name;
+  // Cualquier forma de combate de Aegislash ("Aegislash-Blade"...) se ve como Aegislash.
+  const preview = Object.keys(CALC_FORMES).find(
+    (p) => species.name === p || species.name.startsWith(`${p}-`),
+  );
+  if (preview) return preview;
   const base = species.name.replace(/-(Mega|Primal)(-.*)?$/, '');
   return base === species.name
     ? species.name

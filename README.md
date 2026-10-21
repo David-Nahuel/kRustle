@@ -70,6 +70,10 @@ cargo test
   Se resuelven contra el dex de Showdown: primero alias, luego coincidencia exacta y después
   una búsqueda aproximada conservadora. El informe `pipeline/cache/report-<formato>.json` lista
   las correcciones aplicadas y lo que no se pudo resolver; esto último se añade a `aliases.json`.
+  Después se comprueba contra el roster de Champions: los objetos, movimientos y habilidades que
+  no existen en el juego o que la especie no puede llevar se quitan del set (la habilidad de su
+  mega sí vale, que es la que muchos apuntan), y una especie fuera del roster se avisa porque
+  suele ser una forma mal etiquetada ("Floette" por "Floette-Eternal") que necesita un alias.
 - **Ponderación**: cada equipo pesa `0.5^(días / 14) × (0.5 + winrate suavizado)`, así que lo
   reciente y lo que gana cuenta más.
 
@@ -158,7 +162,9 @@ Es una estimación por 1 contra 1: no simula combos de dobles. Tarda ~75 ms en e
 
 - `roster.json`: los Pokémon y objetos legales en Champions, sacados de las tablas del editor de
   equipos de Showdown (`teambuilder-tables.js`). Son los que ofrece el buscador de la web: sin
-  megas ni formas que solo existen en combate (Aegislash-Blade, Palafin-Hero...).
+  megas ni formas que solo existen en combate (Aegislash-Blade, Palafin-Hero...). Incluye todas
+  las habilidades de cada uno, porque la calculadora solo trae la primera (Incineroar sin
+  Intimidate).
 - La web sirve sus propios sprites (`web/public/sprites/`, ~1,3 MB) en lugar de cargarlos de
   Showdown en cada visita, y el service worker los guarda todos para usar la app sin conexión.
   - **Pokémon**: el sprite HOME de cada Pokémon legal, descargado una vez y guardado en WebP a 128 px.
