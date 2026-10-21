@@ -100,6 +100,9 @@ struct BuildArgs {
     /// Media mínima de Pokémon del top 30 por equipo para no tratar un torneo como temático.
     #[arg(long, default_value_t = 0.55)]
     min_meta_overlap: f64,
+    /// Genera los datos aunque haya bastantes menos equipos que en la build anterior.
+    #[arg(long)]
+    accept_drop: bool,
 }
 
 #[derive(Args)]
@@ -115,6 +118,20 @@ fn repo_root() -> &'static Path {
         .expect("el crate vive en <repo>/pipeline")
 }
 
+/// Problema que no detiene el pipeline. En GitHub Actions sale también como anotación en el
+/// resumen de la ejecución, para que no pase desapercibido.
+fn warn(message: &str) {
+    if std::env::var_os("GITHUB_ACTIONS").is_some() {
+        let escaped = message
+            .replace('%', "%25")
+            .replace('\r', "%0D")
+            .replace('\n', "%0A");
+        println!("::warning::{escaped}");
+    } else {
+        eprintln!("aviso: {message}");
+    }
+}
+
 fn run_fetch(common: &CommonArgs, args: &FetchArgs) -> Result<()> {
     let cache = cache_dir(common);
     dex::ensure_downloaded(&cache, args.refresh_dex)?;
@@ -127,7 +144,13 @@ fn run_fetch(common: &CommonArgs, args: &FetchArgs) -> Result<()> {
             max_tournaments: args.max,
         },
     )?;
-    smogon::fetch(&cache, &common.format)
+    // Los SP de Smogon son opcionales (sin ellos la web los estima): que no bloqueen el resto.
+    if let Err(e) = smogon::fetch(&cache, &common.format) {
+        warn(&format!(
+            "Smogon no responde ({e:#}): se usan las estadísticas ya descargadas, si las hay"
+        ));
+    }
+    Ok(())
 }
 
 fn data_dir(args: &BuildArgs) -> PathBuf {
@@ -164,6 +187,7 @@ fn run_build(common: &CommonArgs, args: &BuildArgs) -> Result<()> {
             min_players: common.min_players,
             half_life_days: args.half_life_days,
             min_meta_overlap: args.min_meta_overlap,
+            accept_drop: args.accept_drop,
         },
     )
 }
