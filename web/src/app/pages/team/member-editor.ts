@@ -8,7 +8,6 @@ import {
   type StatId,
   getItem,
   getMove,
-  getSpecies,
   statTotal,
 } from '../../../engine/champions';
 import type { TeamMember } from '../../../engine/pokepaste';
@@ -185,7 +184,7 @@ export class MemberEditor {
   protected readonly total = computed(() => statTotal(this.member().sps));
 
   protected readonly abilities = computed(() => {
-    const abilities: string[] = Object.values(getSpecies(this.member().species)?.abilities ?? {});
+    const abilities = this.data.abilitiesFor(this.member().species);
     const current = this.member().ability;
     return current && !abilities.includes(current) ? [current, ...abilities] : abilities;
   });

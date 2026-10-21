@@ -1,5 +1,7 @@
 import { Generations, toID } from '@smogon/calc';
 
+import type { SpeciesUsage } from './metagame';
+
 /** Pokémon Champions es la "generación 0" de @smogon/calc: nivel 50 fijo y Stat Points en lugar de EVs. */
 export const GEN = Generations.get(0);
 
@@ -72,6 +74,19 @@ export function battleAbility(
   const forme = battleForme(species, item, mega);
   if (forme === (getSpecies(species)?.name ?? species)) return ability;
   return getSpecies(forme)?.abilities?.[0] || ability;
+}
+
+/**
+ * Habilidades posibles de la especie, las más usadas en torneos primero: un Rillaboom nuevo
+ * empieza con Grassy Surge, no con Overgrow, que es la primera del dex. `all` es la lista
+ * completa (de `roster.json`); sin ella, solo la que trae la calculadora.
+ */
+export function abilitiesByUsage(species: string, usage?: SpeciesUsage, all?: string[]): string[] {
+  const legal: string[] = all?.length ? all : Object.values(getSpecies(species)?.abilities ?? {});
+  const used = (usage?.abilities ?? [])
+    .map(([ability]) => ability)
+    .filter((ability) => legal.includes(ability));
+  return [...used, ...legal.filter((ability) => !used.includes(ability))];
 }
 
 /** Piedras con las que puede megaevolucionar la especie (Charizard → Charizardite X e Y). */

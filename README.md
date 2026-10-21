@@ -158,7 +158,9 @@ Es una estimación por 1 contra 1: no simula combos de dobles. Tarda ~75 ms en e
 
 - `roster.json`: los Pokémon y objetos legales en Champions, sacados de las tablas del editor de
   equipos de Showdown (`teambuilder-tables.js`). Son los que ofrece el buscador de la web: sin
-  megas ni formas que solo existen en combate (Aegislash-Blade, Palafin-Hero...).
+  megas ni formas que solo existen en combate (Aegislash-Blade, Palafin-Hero...). Incluye todas
+  las habilidades de cada uno, porque la calculadora solo trae la primera (Incineroar sin
+  Intimidate).
 - La web sirve sus propios sprites (`web/public/sprites/`, ~1,3 MB) en lugar de cargarlos de
   Showdown en cada visita, y el service worker los guarda todos para usar la app sin conexión.
   - **Pokémon**: el sprite HOME de cada Pokémon legal, descargado una vez y guardado en WebP a 128 px.

@@ -1,3 +1,4 @@
+// Solo tipos: `npm run validate` carga este módulo en Node sin empaquetar.
 import type { MoveCatalog, MoveInfo } from './moves';
 
 /** Tipos de los JSON que genera el pipeline (`pipeline/src/aggregate.rs`). */
@@ -84,7 +85,12 @@ export interface SpreadsFile {
 /** `roster.json`: Pokémon y objetos legales, según el editor de equipos de Showdown. */
 export interface RosterFile {
   /** Lo que se ve en team preview (sin megas ni formas de combate). */
-  species: { name: string; sprite: string }[];
+  species: {
+    name: string;
+    sprite: string;
+    /** Todas sus habilidades (la calculadora solo trae la primera). Ausente en datos antiguos. */
+    abilities?: string[];
+  }[];
   /** Por orden alfabético; la posición de cada uno es la de su icono en `sprites/items.webp`. */
   items: string[];
   /** Movimientos legales con prioridad, objetivo y flags (la calculadora los trae incompletos). */
@@ -122,6 +128,8 @@ export interface Metagame {
   playerTeams: Map<number, number[]>;
   /** Pokémon legales (vacío si no hay `roster.json`). */
   legalSpecies: string[];
+  /** Especie → todas sus habilidades, según `roster.json` (vacío si no lo hay). */
+  speciesAbilities: Map<string, string[]>;
   /** Objeto → posición de su icono en `sprites/items.webp`. */
   itemIcons: Map<string, number>;
   moves: MoveCatalog;
@@ -208,6 +216,7 @@ export function buildMetagame(
     teamPlayer,
     playerTeams,
     legalSpecies: roster?.species.map((s) => s.name) ?? [],
+    speciesAbilities: new Map(roster?.species.map((s) => [s.name, s.abilities ?? []])),
     itemIcons: new Map(roster?.items.map((item, i) => [item, i])),
     moves: new Map(Object.entries(roster?.moves ?? {})),
   };
