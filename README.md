@@ -21,7 +21,9 @@ Herramientas para Pokémon Champions (VGC):
   Además, un ranking de equipos (los mismos 6 Pokémon llevados al menos 15 veces) por uso, winrate
   o porcentaje de top 8, con sus mejores resultados y sus sets más llevados: se puede usar como
   equipo propio (con los Stat Points más comunes del ladder, que Limitless no publica) o cargar
-  como rival.
+  como rival. Y las amenazas del meta para tu equipo: los 20 Pokémon más usados que no llevas,
+  ordenados por lo mal que los cubres (quién los debilita, a cuántos de los tuyos debilitan de un
+  golpe, quién es más rápido), con el detalle de cada duelo y un enlace a la calculadora.
 - **Modo partida** (dentro de la calculadora): PS, estados y cambios de stat de cada Pokémon, y lo que
   revela el rival (objeto, habilidad, movimientos), que reajusta la inferencia de su set. Se guarda
   en el navegador por si se recarga a mitad de combate.

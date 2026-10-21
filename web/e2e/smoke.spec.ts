@@ -99,6 +99,29 @@ test('Meta enseña el uso, la ficha de cada Pokémon y los núcleos', async ({ p
   expect(errors).toEqual([]);
 });
 
+test('Las amenazas del meta para tu equipo se calculan y abren en la calculadora', async ({
+  page,
+  request,
+}) => {
+  const { errors } = await setUp(page, request);
+  // Sin rival: así la amenaza cabe en su equipo al abrirla en la calculadora.
+  await page.addInitScript(() =>
+    localStorage.setItem('krustle.rival', JSON.stringify(Array(6).fill(null))),
+  );
+  await page.goto('/meta');
+  await page.getByRole('tab', { name: 'Your team' }).click();
+  // Cada amenaza dice cuál es tu mejor respuesta (o que no la tienes).
+  await expect(page.getByText(/^(Answer:|Nobody 2HKOs|None of your)/).first()).toBeVisible({
+    timeout: 30_000,
+  });
+  await page.locator('[role=tabpanel] button[aria-expanded]').first().click();
+  await page.getByRole('button', { name: 'Open in the calc' }).first().click();
+  await expect(page.getByRole('heading', { name: 'Your attacks' })).toBeVisible({
+    timeout: 30_000,
+  });
+  expect(errors).toEqual([]);
+});
+
 test('Un equipo del ranking se puede usar como propio y llega a Pick', async ({
   page,
   request,
