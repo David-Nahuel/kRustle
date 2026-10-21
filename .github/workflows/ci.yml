@@ -52,7 +52,7 @@ jobs:
 
       # Solo el código: los JSON de configuración de Angular siguen su propio estilo.
       - name: Formato
-        run: npx prettier --check src scripts
+        run: npx prettier --check src scripts e2e playwright.config.ts
 
       - name: Tests
         run: npm test -- --watch=false

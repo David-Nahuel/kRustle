@@ -89,6 +89,12 @@ jobs:
           npm ci
           npx ng build
 
+      # Con los datos nuevos, cada página arranca y pinta lo principal sin errores; si no, no se
+      # publica y se queda la versión anterior. Usa el Chrome que ya trae el runner.
+      - name: Prueba de humo
+        working-directory: web
+        run: npm run e2e
+
       # Informativo: el acierto de la inferencia con los datos nuevos, en el resumen de la ejecución.
       - name: Acierto de la inferencia
         continue-on-error: true

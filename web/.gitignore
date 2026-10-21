@@ -44,3 +44,7 @@ __screenshots__/
 Thumbs.db
 .vercel
 .env*
+
+# Playwright (pruebas de humo)
+/test-results
+/playwright-report

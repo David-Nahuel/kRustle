@@ -110,6 +110,7 @@ npm install
 npm start        # http://localhost:4200
 npm test         # tests del motor (Vitest)
 npm run validate # acierto de la inferencia de sets con datos reales (M-C por defecto)
+npm run e2e      # pruebas de humo sobre el build (tras `ng build`; usa Edge, o PW_CHANNEL=chrome)
 ```
 
 `npm run validate -- M-C 0,1,2.5` compara varios valores de `similarityBoost`. Conviene repetirlo
@@ -174,7 +175,8 @@ cada push a `main` que toque la web o el pipeline, y a mano desde *Run workflow*
    saltan, porque el código no cambia.
 2. Restaura la caché de Actions (respuestas de Limitless y sprites ya descargados).
 3. `update`: datos del formato, roster, nombres traducidos y sprites.
-4. Build de la web.
+4. Build de la web y prueba de humo (`npm run e2e`): con los datos nuevos, cada página arranca y
+   pinta lo principal sin errores. Si falla, no se publica.
 5. Sube `dist/` a Vercel ya construido (`vercel deploy --prebuilt`, Build Output API con la
    config de `web/vercel/config.json`): Vercel no compila nada, solo sirve los ficheros.
 
