@@ -54,9 +54,37 @@
   <router-outlet />
 </main>
 
-@if (dataInfo(); as info) {
-  <footer class="mx-auto max-w-5xl px-4 pb-6 text-xs text-slate-400">{{ info }}</footer>
-}
+<footer class="mx-auto flex max-w-5xl flex-col gap-1.5 px-4 pb-6 text-xs text-slate-500">
+  @if (dataInfo(); as info) {
+    <p class="text-slate-400">{{ info }}</p>
+  }
+  <p class="flex flex-wrap gap-x-2">
+    <span>{{ t('footer.dataFrom') }}</span>
+    @for (source of sources; track source.name) {
+      <a
+        [href]="source.url"
+        target="_blank"
+        rel="noopener"
+        class="underline underline-offset-2 hover:text-slate-300"
+        >{{ source.name }}</a
+      >
+    }
+  </p>
+  <!-- Herramienta de fans: que no parezca oficial ni se confunda con las marcas que usa. -->
+  <p>{{ t('footer.disclaimer') }}</p>
+  <p class="flex flex-wrap gap-x-3">
+    <a href="3rdpartylicenses.txt" class="underline underline-offset-2 hover:text-slate-300">{{
+      t('footer.licenses')
+    }}</a>
+    <a
+      [href]="repository"
+      target="_blank"
+      rel="noopener"
+      class="underline underline-offset-2 hover:text-slate-300"
+      >{{ t('footer.contact') }}</a
+    >
+  </p>
+</footer>
 
 <!-- Avisos abajo, uno encima de otro: deshacer lo último que se ha quitado y la versión nueva. -->
 <div class="pointer-events-none fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-md flex-col gap-2">

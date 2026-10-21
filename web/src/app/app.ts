@@ -7,6 +7,14 @@ import { UndoService } from './data/undo.service';
 import { I18n, LANGS } from './i18n/i18n.service';
 import type { MessageKey } from './i18n/messages';
 
+/** De dónde salen los datos (en el pie de página). */
+const SOURCES = [
+  { name: 'Limitless', url: 'https://play.limitlesstcg.com' },
+  { name: 'Smogon', url: 'https://www.smogon.com/stats/' },
+  { name: 'Pokémon Showdown', url: 'https://pokemonshowdown.com' },
+  { name: 'PokeAPI', url: 'https://pokeapi.co' },
+];
+
 /**
  * En el orden en que se usan: el equipo, la selección contra el rival y la partida; al final, el
  * metajuego, que se consulta aparte.
@@ -29,6 +37,9 @@ export class App {
   protected readonly i18n = inject(I18n);
   protected readonly t = this.i18n.t;
   protected readonly links = LINKS;
+  protected readonly sources = SOURCES;
+  /** Código, y dónde pedir que se retire algo (un nombre de jugador, una imagen...). */
+  protected readonly repository = 'https://github.com/David-Nahuel/kRustle';
   protected readonly langs = LANGS;
   private readonly updates = inject(SwUpdate);
   /** El service worker ya tiene la versión nueva (o la actual no tiene arreglo): toca recargar. */
