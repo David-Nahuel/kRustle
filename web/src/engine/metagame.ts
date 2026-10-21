@@ -137,6 +137,22 @@ export interface MetagameFiles {
 
 const DAY_MS = 86_400_000;
 
+/**
+ * Peso de un equipo: lo reciente y lo que gana cuenta más. Misma fórmula que `team_weight` en el
+ * pipeline (`aggregate.rs`); `pipeline/team-weight-cases.json` comprueba que coinciden.
+ */
+export function teamWeight(
+  ageDays: number,
+  halfLifeDays: number,
+  wins: number,
+  losses: number,
+): number {
+  const recency = 0.5 ** (ageDays / halfLifeDays);
+  // Laplace: un 0-0 cuenta como 50%, así un buen resultado pesa más sin anular al resto.
+  const winRate = (wins + 1) / (wins + losses + 2);
+  return recency * (0.5 + winRate);
+}
+
 export function buildMetagame(
   { meta, usage, teams: file, spreads, roster }: MetagameFiles,
   now: Date = new Date(),
@@ -154,7 +170,7 @@ export function buildMetagame(
   );
 
   const teamSpecies: string[][] = [];
-  const teamWeight: number[] = [];
+  const weights: number[] = [];
   const occurrences = new Map<string, { team: number; set: number }[]>();
   const teamInfo: Metagame['teamInfo'] = [];
   const teamPlayer = file.teams.map((_, team) => file.teamPlayers?.[team] ?? -1);
@@ -168,9 +184,7 @@ export function buildMetagame(
       if (!list) playerTeams.set(player, (list = []));
       list.push(team);
     }
-    const recency = 0.5 ** (tournamentAge[tournament] / meta.halfLifeDays);
-    const winRate = (wins + 1) / (wins + losses + 2);
-    teamWeight.push(recency * (0.5 + winRate));
+    weights.push(teamWeight(tournamentAge[tournament], meta.halfLifeDays, wins, losses));
     teamSpecies.push(setIds.map((s) => sets[s].species));
     for (const set of setIds) {
       const species = sets[set].species;
@@ -184,7 +198,7 @@ export function buildMetagame(
     meta,
     usage: new Map(usage.map((u) => [u.species, u])),
     teamSpecies,
-    teamWeight,
+    teamWeight: weights,
     sets,
     occurrences,
     spreads: new Map(Object.entries(spreads?.species ?? {})),
