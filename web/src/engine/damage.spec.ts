@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { battleForme, emptyStats, megaStonesFor } from './champions';
+import { battleForme, emptyStats, megaStonesFor, previewSpecies } from './champions';
 import { type Combatant, calcDamage, damageOverSpreads } from './damage';
 
 const sps = (partial: Partial<ReturnType<typeof emptyStats>>) => ({ ...emptyStats(), ...partial });
@@ -31,6 +31,19 @@ describe('battleForme', () => {
   it('con la piedra pero sin megaevolucionar aún, es la forma base', () => {
     expect(battleForme('Charizard', 'Charizardite Y', false)).toBe('Charizard');
   });
+
+  it('Aegislash, que la calculadora solo conoce por sus formas, ataca en Blade y defiende en Shield', () => {
+    expect(battleForme('Aegislash', 'Life Orb')).toBe('Aegislash-Both');
+  });
+});
+
+describe('previewSpecies', () => {
+  it('cualquier forma de Aegislash se ve como Aegislash', () => {
+    for (const name of ['Aegislash', 'Aegislash-Both', 'Aegislash-Blade', 'Aegislash-Shield']) {
+      expect(previewSpecies(name)).toBe('Aegislash');
+    }
+    expect(previewSpecies('Charizard-Mega-Y')).toBe('Charizard');
+  });
 });
 
 describe('megaStonesFor', () => {
@@ -47,6 +60,18 @@ describe('calcDamage', () => {
     expect(r.minPercent).toBeGreaterThan(0);
     expect(r.maxPercent).toBeGreaterThan(r.minPercent);
     expect(r.description).toContain('Earthquake');
+  });
+
+  it('calcula con Aegislash en los dos sentidos', () => {
+    const aegislash: Combatant = {
+      species: 'Aegislash',
+      item: 'Life Orb',
+      ability: 'Stance Change',
+      nature: 'Quiet',
+      sps: sps({ hp: 32, spa: 32, def: 2 }),
+    };
+    expect(calcDamage(aegislash, garchomp, 'Shadow Ball')!.maxPercent).toBeGreaterThan(0);
+    expect(calcDamage(incineroar, aegislash, 'Flare Blitz')!.maxPercent).toBeGreaterThan(0);
   });
 
   it('aplica los cambios de stat (Intimidate)', () => {

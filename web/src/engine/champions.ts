@@ -19,8 +19,16 @@ export function statTotal(stats: Stats): number {
   return STAT_IDS.reduce((sum, s) => sum + stats[s], 0);
 }
 
+/**
+ * Pokémon que se ven en team preview con un nombre que la calculadora no conoce, porque solo trae
+ * sus formas de combate. Aegislash ataca en forma Blade y se defiende en Shield (Stance Change),
+ * que es justo "Aegislash-Both". `previewSpecies` deshace el cambio.
+ */
+const CALC_FORMES: Readonly<Record<string, string>> = { Aegislash: 'Aegislash-Both' };
+const CALC_IDS = new Map(Object.entries(CALC_FORMES).map(([name, forme]) => [toID(name), forme]));
+
 export function getSpecies(name: string) {
-  return GEN.species.get(toID(name));
+  return GEN.species.get(toID(CALC_IDS.get(toID(name)) ?? name));
 }
 
 export function getMove(name: string) {
@@ -84,6 +92,11 @@ export function megaStonesFor(species: string): string[] {
 export function previewSpecies(name: string): string {
   const species = getSpecies(name);
   if (!species) return name;
+  // Cualquier forma de combate de Aegislash ("Aegislash-Blade"...) se ve como Aegislash.
+  const preview = Object.keys(CALC_FORMES).find(
+    (p) => species.name === p || species.name.startsWith(`${p}-`),
+  );
+  if (preview) return preview;
   const base = species.name.replace(/-(Mega|Primal)(-.*)?$/, '');
   return base === species.name
     ? species.name

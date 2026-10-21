@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
-import { battleAbility } from '../../engine/champions';
+import { battleAbility, getSpecies } from '../../engine/champions';
 import type { Revealed } from '../../engine/inference';
 import {
   type BattleStatus,
@@ -54,7 +54,13 @@ export class CalcState {
   readonly mySide = signal<SideConditions>(emptySide());
   readonly theirSide = signal<SideConditions>(emptySide());
 
-  readonly rivals = computed(() => this.rivalTeam().filter((s): s is string => !!s));
+  /**
+   * Rivales con los que calcular. Uno que la calculadora no conozca (un equipo antiguo de un
+   * jugador, una especie nueva que aún no trae) se deja fuera en vez de romper la página.
+   */
+  readonly rivals = computed(() =>
+    this.rivalTeam().filter((s): s is string => !!s && !!getSpecies(s)),
+  );
   readonly me = computed(() => this.myTeam()[this.myIndex()] ?? this.myTeam()[0]);
   readonly rival = computed(() => this.rivals()[this.rivalIndex()] ?? this.rivals()[0]);
 
