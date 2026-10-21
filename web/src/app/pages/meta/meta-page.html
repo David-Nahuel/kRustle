@@ -1,0 +1,450 @@
+<div class="flex flex-col gap-4">
+  <header class="flex flex-col gap-1">
+    <h1 class="text-lg font-semibold text-slate-50">{{ t('title.meta') }}</h1>
+    @if (intro(); as intro) {
+      <p class="text-sm text-slate-300">{{ intro }}</p>
+    }
+    <p class="text-xs text-slate-400">{{ t('meta.caveat') }}</p>
+  </header>
+
+  @if (data.error(); as error) {
+    <div
+      class="flex items-center gap-3 rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 text-rose-200"
+      role="alert"
+    >
+      <p class="min-w-0 flex-1">{{ t('data.error', { error }) }}</p>
+      <button
+        type="button"
+        class="shrink-0 rounded-lg px-3 py-1.5 text-sm font-semibold ring-1 ring-rose-400/50 hover:bg-rose-400/10"
+        (click)="data.reload()"
+      >
+        {{ t('data.retry') }}
+      </button>
+    </div>
+  } @else if (!data.metagame()) {
+    <p class="text-slate-400" role="status">{{ t('data.loading') }}</p>
+  } @else {
+    @if (unavailable()) {
+      <p class="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-200">
+        {{ t('meta.unavailable') }}
+      </p>
+    }
+
+    <div class="flex gap-1.5" role="tablist" [attr.aria-label]="t('title.meta')">
+      @for (option of tabs; track option.value) {
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="tab() === option.value"
+          class="rounded-lg px-3 py-1.5 text-sm ring-1"
+          [class]="
+            tab() === option.value
+              ? 'bg-amber-400/15 text-amber-200 ring-amber-400/60'
+              : 'text-slate-400 ring-slate-700 hover:text-slate-200'
+          "
+          (click)="tab.set(option.value)"
+        >
+          {{ t(option.label) }}
+        </button>
+      }
+    </div>
+
+    @switch (tab()) {
+      @case ('species') {
+        <section class="flex flex-col gap-2" role="tabpanel">
+          <input
+            type="search"
+            class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:border-amber-400 focus:outline-none"
+            [placeholder]="t('meta.filter')"
+            [attr.aria-label]="t('meta.filter')"
+            [value]="query()"
+            (input)="query.set($any($event.target).value)"
+          />
+
+          <div
+            class="grid grid-cols-[1fr_3rem_3.5rem_3.5rem] sm:grid-cols-[1fr_3.5rem_4.5rem_4rem] gap-2 px-2 text-xs text-slate-400"
+            aria-hidden="true"
+          >
+            <span>{{ t('meta.colPokemon') }}</span>
+            <span class="text-right">{{ t('meta.colUsage') }}</span>
+            <span class="text-right">{{ t('meta.colTrend') }}</span>
+            <span class="text-right">{{ t('meta.colWinRate') }}</span>
+          </div>
+
+          <ul class="flex flex-col gap-1">
+            @for (row of shown(); track row.usage.species) {
+              <li class="rounded-lg bg-slate-900 ring-1 ring-slate-800">
+                <button
+                  type="button"
+                  class="grid w-full grid-cols-[1fr_3rem_3.5rem_3.5rem] sm:grid-cols-[1fr_3.5rem_4.5rem_4rem] items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-slate-800/60"
+                  [attr.aria-expanded]="expanded() === row.usage.species"
+                  (click)="toggle(row.usage.species)"
+                >
+                  <span class="flex min-w-0 items-center gap-2">
+                    <span
+                      class="hidden w-6 shrink-0 text-right text-xs text-slate-500 tabular-nums sm:inline"
+                      >{{ row.rank }}</span
+                    >
+                    <app-sprite [species]="row.usage.species" [size]="32" />
+                    <span class="truncate font-medium text-slate-100">{{ row.usage.species }}</span>
+                  </span>
+                  <span class="text-right text-slate-200 tabular-nums">{{
+                    i18n.percent(row.usage.usage)
+                  }}</span>
+                  <span class="text-right text-xs tabular-nums">
+                    @if (row.trend !== undefined && row.meta) {
+                      <span [class]="trendClass(row.trend)" [title]="trendTitle(row.meta)">{{
+                        trendLabel(row.trend)
+                      }}</span>
+                    } @else {
+                      <span class="text-slate-600">—</span>
+                    }
+                  </span>
+                  <span class="text-right">
+                    @if (row.usage.winRate !== null) {
+                      <span
+                        class="rounded px-1.5 py-0.5 text-xs tabular-nums ring-1 {{
+                          winRateClass(row.usage.winRate, row.usage.games)
+                        }}"
+                        [title]="gamesTitle(row.usage.games)"
+                        >{{ i18n.percent(row.usage.winRate) }}</span
+                      >
+                    } @else {
+                      <span class="text-slate-600">—</span>
+                    }
+                  </span>
+                </button>
+
+                @if (expanded() === row.usage.species) {
+                  <div class="flex flex-col gap-3 border-t border-slate-800 p-3 text-sm">
+                    <div class="grid gap-3 sm:grid-cols-2">
+                      @for (group of setGroups(row.usage); track group.label) {
+                        @if (group.entries.length) {
+                          <div>
+                            <h3
+                              class="text-xs font-semibold tracking-wide text-slate-400 uppercase"
+                            >
+                              {{ group.label }}
+                            </h3>
+                            <ul class="mt-1 flex flex-wrap gap-1.5">
+                              @for (entry of group.entries; track entry[0]) {
+                                <li
+                                  class="rounded-md bg-slate-800 px-2 py-0.5 text-xs text-slate-200"
+                                >
+                                  {{ entry[0] }}
+                                  <span class="text-slate-400 tabular-nums">{{ entry[1] }}</span>
+                                </li>
+                              }
+                            </ul>
+                          </div>
+                        }
+                      }
+                    </div>
+
+                    @if (row.usage.teammates.length) {
+                      <div>
+                        <h3 class="text-xs font-semibold tracking-wide text-slate-400 uppercase">
+                          {{ t('meta.teammates') }}
+                        </h3>
+                        <ul class="mt-1 flex flex-wrap gap-2">
+                          @for (mate of row.usage.teammates.slice(0, 6); track mate[0]) {
+                            <li class="flex flex-col items-center text-xs" [title]="mate[0]">
+                              <app-sprite [species]="mate[0]" [size]="36" />
+                              <span class="text-slate-400 tabular-nums">{{
+                                i18n.percent(mate[1])
+                              }}</span>
+                            </li>
+                          }
+                        </ul>
+                      </div>
+                    }
+
+                    @if (row.meta) {
+                      @if (row.meta.best.length || row.meta.worst.length) {
+                        <div class="grid gap-3 sm:grid-cols-2">
+                          @for (
+                            side of [
+                              { label: t('meta.best'), list: row.meta.best },
+                              { label: t('meta.worst'), list: row.meta.worst },
+                            ];
+                            track side.label
+                          ) {
+                            @if (side.list.length) {
+                              <div>
+                                <h3
+                                  class="text-xs font-semibold tracking-wide text-slate-400 uppercase"
+                                >
+                                  {{ side.label }}
+                                </h3>
+                                <ul class="mt-1 flex flex-col gap-1">
+                                  @for (m of side.list; track m.species) {
+                                    <li
+                                      class="flex items-center gap-2"
+                                      [title]="gamesTitle(m.games)"
+                                    >
+                                      <app-sprite [species]="m.species" [size]="28" />
+                                      <span class="min-w-0 truncate text-slate-200">{{
+                                        m.species
+                                      }}</span>
+                                      <span
+                                        class="ml-auto rounded px-1.5 py-0.5 text-xs tabular-nums ring-1 {{
+                                          winRateClass(m.winRate, m.games)
+                                        }}"
+                                        >{{ i18n.percent(m.winRate) }}</span
+                                      >
+                                    </li>
+                                  }
+                                </ul>
+                              </div>
+                            }
+                          }
+                        </div>
+                      } @else {
+                        <p class="text-xs text-slate-400">{{ t('meta.noMatchups') }}</p>
+                      }
+                    }
+
+                    @switch (rivalStatus(row.usage.species)) {
+                      @case ('free') {
+                        <button
+                          type="button"
+                          class="self-start rounded-lg px-3 py-1.5 text-sm text-rose-200 ring-1 ring-rose-400/50 hover:bg-rose-400/10"
+                          (click)="addRival(row.usage.species)"
+                        >
+                          {{ t('meta.addRival') }}
+                        </button>
+                      }
+                      @case ('in') {
+                        <p class="text-xs text-rose-300">{{ t('meta.inRival') }}</p>
+                      }
+                      @case ('full') {
+                        <p class="text-xs text-slate-400">{{ t('meta.rivalFull') }}</p>
+                      }
+                    }
+                  </div>
+                }
+              </li>
+            }
+          </ul>
+
+          @if (!filtered().length) {
+            <p class="text-sm text-slate-400">{{ t('meta.noResults', { query: query() }) }}</p>
+          }
+          @if (filtered().length > shown().length) {
+            <button
+              type="button"
+              class="self-center rounded-lg px-4 py-1.5 text-sm text-slate-300 ring-1 ring-slate-700 hover:text-slate-100"
+              (click)="showMore()"
+            >
+              {{ t('meta.showMore') }}
+            </button>
+          }
+        </section>
+      }
+      @case ('cores') {
+        <section class="flex flex-col gap-4" role="tabpanel">
+          <p class="text-xs text-slate-400">{{ t('meta.coresHelp') }}</p>
+          @for (group of coreGroups(); track group.label) {
+            <div class="flex flex-col gap-1.5">
+              <h2 class="font-semibold text-slate-100">{{ group.label }}</h2>
+              <ul class="flex flex-col gap-1">
+                @for (core of group.cores; track core.species.join('+')) {
+                  <li
+                    class="flex items-center gap-2 rounded-lg bg-slate-900 px-2 py-1.5 ring-1 ring-slate-800"
+                  >
+                    <span class="flex shrink-0">
+                      @for (s of core.species; track s) {
+                        <app-sprite [species]="s" [size]="32" />
+                      }
+                    </span>
+                    <span class="min-w-0 flex-1 truncate text-sm text-slate-200">{{
+                      core.species.join(' + ')
+                    }}</span>
+                    <span class="w-12 shrink-0 text-right text-sm text-slate-200 tabular-nums">{{
+                      i18n.percent(core.share)
+                    }}</span>
+                    <span class="w-14 shrink-0 text-right">
+                      @if (core.winRate !== null) {
+                        <span
+                          class="rounded px-1.5 py-0.5 text-xs tabular-nums ring-1 {{
+                            winRateClass(core.winRate, core.games)
+                          }}"
+                          [title]="gamesTitle(core.games)"
+                          >{{ i18n.percent(core.winRate) }}</span
+                        >
+                      }
+                    </span>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+        </section>
+      }
+      @case ('teams') {
+        <section class="flex flex-col gap-3" role="tabpanel">
+          <p class="text-xs text-slate-400">{{ t('meta.teamsHelp') }}</p>
+          <div
+            class="flex flex-wrap items-center gap-1.5"
+            role="group"
+            [attr.aria-label]="t('meta.sortBy')"
+          >
+            @for (option of teamSorts; track option.value) {
+              <button
+                type="button"
+                class="rounded-lg px-2.5 py-1 text-xs ring-1"
+                [class]="
+                  teamSort() === option.value
+                    ? 'bg-violet-400/15 text-violet-200 ring-violet-400/60'
+                    : 'text-slate-400 ring-slate-700 hover:text-slate-200'
+                "
+                [attr.aria-pressed]="teamSort() === option.value"
+                (click)="teamSort.set(option.value)"
+              >
+                {{ t(option.label) }}
+              </button>
+            }
+          </div>
+
+          <ul class="flex flex-col gap-1.5">
+            @for (a of archetypes(); track a.key) {
+              <li class="rounded-lg bg-slate-900 ring-1 ring-slate-800">
+                <button
+                  type="button"
+                  class="flex w-full flex-col gap-1.5 rounded-lg p-2 text-left hover:bg-slate-800/60"
+                  [attr.aria-expanded]="expandedTeam() === a.key"
+                  [attr.aria-label]="a.ordered.join(', ')"
+                  (click)="toggleTeam(a.key)"
+                >
+                  <span class="flex">
+                    @for (s of a.ordered; track s) {
+                      <app-sprite [species]="s" [size]="40" />
+                    }
+                  </span>
+                  <span class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
+                    <span>{{
+                      t('meta.teamsCount', {
+                        teams: i18n.number(a.teams),
+                        players: i18n.number(a.players),
+                      })
+                    }}</span>
+                    @if (a.winRate !== null) {
+                      <span
+                        class="rounded px-1.5 py-0.5 tabular-nums ring-1 {{
+                          winRateClass(a.winRate, a.games)
+                        }}"
+                        [title]="gamesTitle(a.games)"
+                        >{{ i18n.percent(a.winRate) }}</span
+                      >
+                    }
+                    @if (a.largeEntries) {
+                      <span
+                        class="tabular-nums"
+                        [title]="t('meta.topCutsTitle', { n: a.topCuts, entries: a.largeEntries })"
+                        >{{
+                          t('meta.topCuts', {
+                            n: a.topCuts,
+                            entries: a.largeEntries,
+                            pct: i18n.percent(a.topCuts / a.largeEntries),
+                          })
+                        }}</span
+                      >
+                    }
+                    @if (a.wins) {
+                      <span class="text-amber-300">{{ t('meta.wins', { n: a.wins }) }}</span>
+                    }
+                  </span>
+                </button>
+
+                @if (expandedTeam() === a.key) {
+                  <div class="flex flex-col gap-3 border-t border-slate-800 p-3 text-sm">
+                    @if (a.best.length) {
+                      <div>
+                        <h3 class="text-xs font-semibold tracking-wide text-slate-400 uppercase">
+                          {{ t('meta.bestResults') }}
+                        </h3>
+                        <ul class="mt-1 flex flex-col gap-1">
+                          @for (f of a.best; track $index) {
+                            <li class="flex flex-wrap items-baseline gap-x-2">
+                              <span class="font-semibold text-amber-200 tabular-nums">{{
+                                t('meta.finish', { placing: f.placing, players: f.players })
+                              }}</span>
+                              <span class="min-w-0 truncate text-slate-200">{{
+                                f.tournament
+                              }}</span>
+                              <span class="text-xs text-slate-400"
+                                >{{ f.player }} · {{ i18n.shortDate(f.date) }}</span
+                              >
+                            </li>
+                          }
+                        </ul>
+                      </div>
+                    }
+
+                    <div>
+                      <h3 class="text-xs font-semibold tracking-wide text-slate-400 uppercase">
+                        {{ t('meta.sets') }}
+                      </h3>
+                      <ul class="mt-1 flex flex-col gap-2">
+                        @for (set of a.orderedSets; track set.species) {
+                          <li class="flex gap-2">
+                            <app-sprite [species]="set.species" [size]="36" />
+                            <div class="min-w-0">
+                              <p class="text-slate-100">
+                                <span class="font-medium">{{ set.species }}</span>
+                                @if (set.item) {
+                                  <span class="text-slate-400"> @ {{ i18n.item(set.item) }}</span>
+                                }
+                              </p>
+                              <p class="text-xs text-slate-400">{{ setDetails(set) }}</p>
+                              <p class="text-xs text-slate-300">{{ setMoves(set) }}</p>
+                            </div>
+                          </li>
+                        }
+                      </ul>
+                    </div>
+
+                    <p class="text-xs text-slate-400">{{ t('meta.spsNote') }}</p>
+                    <div class="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        class="rounded-lg bg-amber-400 px-3 py-1.5 text-sm font-semibold text-slate-950 hover:bg-amber-300"
+                        (click)="useTeam(a)"
+                      >
+                        {{ t('meta.useTeam') }}
+                      </button>
+                      <button
+                        type="button"
+                        class="rounded-lg px-3 py-1.5 text-sm text-rose-200 ring-1 ring-rose-400/50 hover:bg-rose-400/10"
+                        (click)="loadRival(a)"
+                      >
+                        {{ t('meta.loadRival') }}
+                      </button>
+                    </div>
+                    @if (done(); as d) {
+                      @if (d.key === a.key) {
+                        <p class="text-xs text-emerald-300" role="status">
+                          @if (d.action === 'saved') {
+                            {{ t('meta.teamSaved', { name: d.name ?? '' }) }}
+                            <a routerLink="/equipo" class="underline underline-offset-2">{{
+                              t('meta.openTeam')
+                            }}</a>
+                          } @else {
+                            {{ t('meta.rivalLoaded') }}
+                            <a routerLink="/seleccion" class="underline underline-offset-2">{{
+                              t('meta.goPick')
+                            }}</a>
+                          }
+                        </p>
+                      }
+                    }
+                  </div>
+                }
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    }
+  }
+</div>

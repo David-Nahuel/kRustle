@@ -6,6 +6,9 @@
 //! - `teams.json` — todos los equipos y enfrentamientos en formato compacto, para que la web
 //!   pueda inferir sets condicionados al equipo rival concreto.
 //! - `spreads.json` — repartos de Stat Points por especie y naturaleza (ver `smogon.rs`).
+//! - `meta-analysis.json` — tendencias, núcleos y enfrentamientos entre especies (ver `meta.rs`).
+
+mod meta;
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::Path;
@@ -54,6 +57,8 @@ struct Team {
     player: String,
     player_name: String,
     record: Record,
+    /// Puesto final en el torneo, si se sabe.
+    placing: Option<u32>,
     sets: Vec<Set>,
     weight: f64,
 }
@@ -139,6 +144,7 @@ pub fn build(
                         player_name: s.name.clone().unwrap_or_else(|| s.player.clone()),
                         player,
                         record,
+                        placing: s.placing,
                         sets,
                         weight: team_weight(age_days, opts.half_life_days, record),
                     });
@@ -252,6 +258,11 @@ pub fn build(
     limitless::write_atomic(
         &out_dir.join("teams.json"),
         &serde_json::to_string(&teams_file)?,
+    )?;
+    let meta_analysis = meta::build(&tournaments, &teams, &matches);
+    limitless::write_atomic(
+        &out_dir.join("meta-analysis.json"),
+        &serde_json::to_string(&meta_analysis)?,
     )?;
 
     let spreads = crate::smogon::build(cache_root, format)?;
@@ -819,6 +830,7 @@ mod tests {
             player: format!("p{tournament}"),
             player_name: String::new(),
             record: Record::default(),
+            placing: None,
             weight: 1.0,
             sets: species
                 .iter()
