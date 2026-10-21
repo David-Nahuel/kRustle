@@ -70,6 +70,24 @@
             <span class="text-right">{{ t('meta.colTrend') }}</span>
             <span class="text-right">{{ t('meta.colWinRate') }}</span>
           </div>
+          <!-- En el móvil no hay "title" al pasar por encima: la explicación va a la vista. -->
+          <details class="px-2 text-xs text-slate-400">
+            <summary class="cursor-pointer select-none hover:text-slate-200">
+              {{ t('meta.legendTitle') }}
+            </summary>
+            <ul class="mt-1.5 flex flex-col gap-1">
+              <li>{{ t('meta.legendUsage') }}</li>
+              <li>
+                {{
+                  t('meta.legendTrend', {
+                    days: analysis()?.trendDays ?? 7,
+                    baseline: analysis()?.baselineDays ?? 21,
+                  })
+                }}
+              </li>
+              <li>{{ t('meta.legendWinRate') }}</li>
+            </ul>
+          </details>
 
           <ul class="flex flex-col gap-1">
             @for (row of shown(); track row.usage.species) {
@@ -117,6 +135,9 @@
 
                 @if (expanded() === row.usage.species) {
                   <div class="flex flex-col gap-3 border-t border-slate-800 p-3 text-sm">
+                    <p class="text-xs text-slate-400">
+                      {{ t('meta.detailHelp', { name: row.usage.species }) }}
+                    </p>
                     <div class="grid gap-3 sm:grid-cols-2">
                       @for (group of setGroups(row.usage); track group.label) {
                         @if (group.entries.length) {
@@ -246,7 +267,15 @@
           <p class="text-xs text-slate-400">{{ t('meta.coresHelp') }}</p>
           @for (group of coreGroups(); track group.label) {
             <div class="flex flex-col gap-1.5">
-              <h2 class="font-semibold text-slate-100">{{ group.label }}</h2>
+              <div class="flex items-baseline gap-2 px-2">
+                <h2 class="min-w-0 flex-1 font-semibold text-slate-100">{{ group.label }}</h2>
+                <span class="w-12 shrink-0 text-right text-xs text-slate-400">{{
+                  t('meta.colUsage')
+                }}</span>
+                <span class="w-14 shrink-0 text-right text-xs text-slate-400">{{
+                  t('meta.colWinRate')
+                }}</span>
+              </div>
               <ul class="flex flex-col gap-1">
                 @for (core of group.cores; track core.species.join('+')) {
                   <li
@@ -329,13 +358,16 @@
                       })
                     }}</span>
                     @if (a.winRate !== null) {
-                      <span
-                        class="rounded px-1.5 py-0.5 tabular-nums ring-1 {{
-                          winRateClass(a.winRate, a.games)
-                        }}"
-                        [title]="gamesTitle(a.games)"
-                        >{{ i18n.percent(a.winRate) }}</span
-                      >
+                      <span class="flex items-center gap-1">
+                        {{ t('meta.colWinRate') }}
+                        <span
+                          class="rounded px-1.5 py-0.5 tabular-nums ring-1 {{
+                            winRateClass(a.winRate, a.games)
+                          }}"
+                          [title]="gamesTitle(a.games)"
+                          >{{ i18n.percent(a.winRate) }}</span
+                        >
+                      </span>
                     }
                     @if (a.largeEntries) {
                       <span
@@ -481,7 +513,7 @@
                             threat.species
                           }}</span>
                           <span class="text-xs text-slate-500 tabular-nums">{{
-                            i18n.percent(threat.usage)
+                            t('meta.usageShort', { pct: i18n.percent(threat.usage) })
                           }}</span>
                         </span>
                         <span

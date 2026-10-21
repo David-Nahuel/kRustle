@@ -9,7 +9,7 @@ import { RivalTeamPicker } from '../../shared/rival-team-picker';
 import { Sprite } from '../../shared/sprite';
 import { BattleStatusPanel } from './battle-status-panel';
 import { battleAbility, megaStonesFor } from '../../../engine/champions';
-import type { DamageOdds } from '../../../engine/damage';
+import { type DamageOdds, maxHp } from '../../../engine/damage';
 import type { MoveRow } from '../../../engine/matchup';
 import { DamageRow } from './damage-row';
 import { FieldBar } from './field-bar';
@@ -51,6 +51,12 @@ export class CalcPage {
   protected readonly rivalAbility = computed(() => {
     const set = this.state.matchup()?.rivalSet;
     return set && battleAbility(set.species, set.item, set.ability, this.state.rivalStatus().mega);
+  });
+
+  /** PS máximos de mi Pokémon (en la forma con la que combate): su vida se ve en PS. */
+  protected readonly myMaxHp = computed(() => {
+    const me = this.state.me();
+    return me && maxHp({ ...me, mega: this.state.myStatus().mega });
   });
 
   /** Mi Pokémon solo puede megaevolucionar con la piedra que lleva. */
