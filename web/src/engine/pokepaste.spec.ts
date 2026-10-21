@@ -29,6 +29,12 @@ Careful Nature
     ]);
   });
 
+  it('acepta Aegislash con el nombre de Showdown y lo deja así en el equipo', () => {
+    const { members, warnings } = parsePokepaste('Aegislash @ Life Orb\nAbility: Stance Change');
+    expect(warnings.filter((w) => w.code === 'unknownSpecies')).toEqual([]);
+    expect(members.map((m) => m.species)).toEqual(['Aegislash']);
+  });
+
   it('convierte EVs clásicos a Stat Points', () => {
     const { members, warnings } = parsePokepaste(`Garchomp @ Choice Scarf
 EVs: 4 HP / 252 Atk / 252 Spe

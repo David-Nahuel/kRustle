@@ -1,6 +1,6 @@
 import { Injectable, computed, resource } from '@angular/core';
 
-import { GEN, previewSpecies } from '../../engine/champions';
+import { GEN, abilitiesByUsage, previewSpecies } from '../../engine/champions';
 import {
   type Meta,
   type RosterFile,
@@ -38,6 +38,16 @@ export class MetagameService {
   readonly metagame = computed(() => (this.data.hasValue() ? this.data.value() : undefined));
   readonly loading = this.data.isLoading;
   readonly error = computed(() => this.data.error()?.message);
+
+  /** Habilidades posibles de la especie, las más usadas en torneos primero. */
+  abilitiesFor(species: string): string[] {
+    const metagame = this.metagame();
+    return abilitiesByUsage(
+      species,
+      metagame?.usage.get(species),
+      metagame?.speciesAbilities.get(species),
+    );
+  }
 
   /** Vuelve a intentar la carga (p. ej. tras perder la conexión). */
   reload(): void {

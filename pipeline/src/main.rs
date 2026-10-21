@@ -183,6 +183,7 @@ fn run_build(common: &CommonArgs, args: &BuildArgs) -> Result<()> {
         &repo_root().join("pipeline/aliases.json"),
         &data_dir(args),
         &common.format,
+        roster.as_ref(),
         &aggregate::BuildOptions {
             min_players: common.min_players,
             half_life_days: args.half_life_days,

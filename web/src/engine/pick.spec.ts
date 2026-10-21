@@ -114,6 +114,12 @@ describe('analyzePick', () => {
     expect(small.plans[0].bring).toHaveLength(3);
     expect(small.rivalSets[0].species).toBe('Pikachu');
   });
+
+  it('con un solo Pokémon, abre él solo (sin índices inventados)', () => {
+    const [plan] = analyzePick(metagame, myTeam.slice(0, 1), ['Pikachu']).plans;
+    expect(plan.leads).toEqual([0]);
+    expect(plan.back).toEqual([]);
+  });
 });
 
 describe('analyzePick con Trick Room', () => {

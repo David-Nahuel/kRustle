@@ -68,6 +68,10 @@ pub struct Dex {
     species: HashMap<String, String>,
     /// Nombre en team preview → id de sprite de Showdown ("Rotom-Wash" → "rotom-wash").
     sprite_ids: HashMap<String, String>,
+    /// Nombre en team preview → sus habilidades (la normal, la segunda y la oculta).
+    species_abilities: HashMap<String, Vec<String>>,
+    /// Piedra → habilidades de la mega en la que se convierte ("Charizardite Y" → Drought).
+    stone_abilities: HashMap<String, Vec<String>>,
     moves: HashMap<String, String>,
     /// id de movimiento → datos completos de Showdown (prioridad, objetivo, flags...).
     move_data: HashMap<String, Value>,
@@ -86,7 +90,17 @@ impl Dex {
         let moves = read_object(&dir.join("moves.json"), false)?;
         let mut species = HashMap::new();
         let mut sprite_ids = HashMap::new();
+        let mut species_abilities = HashMap::new();
+        let mut stone_abilities = HashMap::new();
         let mut megas = Vec::new();
+        // `{"0": ..., "1": ..., "H": ...}`: las claves ordenadas dan ese mismo orden.
+        let abilities_of = |v: &Value| -> Vec<String> {
+            v["abilities"]
+                .as_object()
+                .into_iter()
+                .flat_map(|a| a.values().filter_map(Value::as_str).map(str::to_string))
+                .collect()
+        };
         for (id, v) in pokedex.into_iter().filter(|(_, v)| !is_fake(v)) {
             let Some(name) = v["name"].as_str() else {
                 continue;
@@ -94,9 +108,13 @@ impl Dex {
             let forme = v["forme"].as_str().unwrap_or("");
             let base = v["baseSpecies"].as_str();
             if forme.contains("Mega") || forme == "Primal" {
+                if let Some(stone) = v["requiredItem"].as_str() {
+                    stone_abilities.insert(stone.to_string(), abilities_of(&v));
+                }
                 megas.push((id, name.to_string(), base.unwrap_or(name).to_string()));
             } else {
                 sprite_ids.insert(name.to_string(), sprite_id(name, base, forme));
+                species_abilities.insert(name.to_string(), abilities_of(&v));
                 species.insert(id, name.to_string());
             }
         }
@@ -114,6 +132,8 @@ impl Dex {
         Ok(Self {
             species,
             sprite_ids,
+            species_abilities,
+            stone_abilities,
             moves: names(moves.clone()),
             move_data: moves.into_iter().collect(),
             items: names(items.clone()),
@@ -135,6 +155,24 @@ impl Dex {
 
     pub fn sprite_id(&self, preview_name: &str) -> Option<&str> {
         self.sprite_ids.get(preview_name).map(String::as_str)
+    }
+
+    /// Habilidades de una especie de team preview (la calculadora solo trae la primera).
+    pub fn species_abilities(&self, preview_name: &str) -> &[String] {
+        self.species_abilities
+            .get(preview_name)
+            .map_or(&[], Vec::as_slice)
+    }
+
+    /// Si un set puede llevar esa habilidad: una de la especie o, con su piedra, de la mega (en
+    /// las hojas de equipo se suele apuntar la de la mega: Drought en Charizard con Charizardite Y).
+    /// Sin datos de la especie no se descarta nada.
+    pub fn allows_ability(&self, preview_name: &str, item: Option<&str>, ability: &str) -> bool {
+        let own = self.species_abilities(preview_name);
+        let mega = item
+            .and_then(|i| self.stone_abilities.get(i))
+            .map_or(&[][..], Vec::as_slice);
+        own.is_empty() || own.iter().chain(mega).any(|a| a == ability)
     }
 
     /// Nombre de una especie por su id de Showdown (sin pasar a especie base).
@@ -420,6 +458,8 @@ mod tests {
             .map(|(id, name)| (id.to_string(), name.to_string()))
             .collect(),
             sprite_ids: HashMap::new(),
+            species_abilities: HashMap::new(),
+            stone_abilities: HashMap::new(),
             item_icons: HashMap::new(),
             move_data: HashMap::new(),
             moves: table(&[
