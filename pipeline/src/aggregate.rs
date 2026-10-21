@@ -17,6 +17,7 @@ use serde_json::Value;
 
 use crate::dex::{Aliases, Dex, Kind, Normalizer};
 use crate::limitless::{self, Cache, DeckMon, Record, Tournament};
+use crate::roster::Roster;
 
 pub struct BuildOptions {
     pub min_players: u32,
@@ -77,6 +78,8 @@ struct Report {
     unresolved_names: Vec<(String, u32)>,
     fuzzy_corrections: BTreeMap<String, String>,
     excluded_tournaments: BTreeMap<String, String>,
+    /// Especie → sets de equipos usados que la llevan sin estar en el roster legal.
+    species_not_in_roster: BTreeMap<String, u32>,
 }
 
 pub fn build(
@@ -84,6 +87,7 @@ pub fn build(
     aliases_path: &Path,
     out_root: &Path,
     format: &str,
+    roster: Option<&Roster>,
     opts: &BuildOptions,
 ) -> Result<()> {
     let dex = Dex::load(cache_root)?;
@@ -177,6 +181,31 @@ pub fn build(
             format!("metajuego atípico ({overlap:.2} de media en el top {TOP_SPECIES})"),
         );
         report.tournaments_off_meta += 1;
+    }
+
+    // Una especie fuera del roster suele ser una forma mal etiquetada en Limitless ("Floette" por
+    // "Floette-Eternal"): en la web no se encuentra al buscarla y la calculadora no la conoce.
+    if let Some(roster) = roster {
+        let legal: HashSet<&str> = roster.species.iter().map(|s| s.name.as_str()).collect();
+        for set in teams.iter().flat_map(|t| &t.sets) {
+            if !legal.contains(set.species.as_str()) {
+                *report
+                    .species_not_in_roster
+                    .entry(set.species.clone())
+                    .or_default() += 1;
+            }
+        }
+        if !report.species_not_in_roster.is_empty() {
+            let list: Vec<String> = report
+                .species_not_in_roster
+                .iter()
+                .map(|(species, n)| format!("{species} ({n})"))
+                .collect();
+            crate::warn(&format!(
+                "especies fuera del roster de Champions (¿falta un alias en aliases.json?): {}",
+                list.join(", ")
+            ));
+        }
     }
 
     report.tournaments_used = tournaments.len();
@@ -332,6 +361,12 @@ fn write_step_summary(format: &str, report: &Report, previous_teams: Option<usiz
         report.dropped_teams.values().sum::<u32>(),
         report.fuzzy_corrections.len(),
     );
+    if !report.species_not_in_roster.is_empty() {
+        md += "\n**Especies fuera del roster** (¿falta un alias de especie?):\n\n";
+        for (species, n) in &report.species_not_in_roster {
+            md += &format!("- {n}× `{species}`\n");
+        }
+    }
     if !report.unresolved_names.is_empty() {
         md += &format!(
             "\n**Nombres sin resolver** ({}; los frecuentes van a `pipeline/aliases.json`):\n\n",
