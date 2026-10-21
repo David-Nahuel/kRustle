@@ -82,7 +82,6 @@ const en = {
     'It tells you which 4 to bring and what to lead with; the Calc shows damage and speed during the game.',
   'team.saved': 'Saved teams',
   'team.delete': 'Delete {name}',
-  'team.confirmDelete': 'Delete the team "{name}"?',
   'team.new': '+ New team',
   'team.name': 'Name',
   'team.defaultName': 'My team',
@@ -97,6 +96,7 @@ const en = {
   'team.edit': 'Edit',
   'team.editAria': 'Edit {name}',
   'team.add': 'Add Pokémon…',
+  'team.slot': 'Pokémon {n}',
 
   'warn.unknownSpecies': 'Unknown Pokémon "{value}".',
   'warn.unknownItem': '{species}: unknown item "{value}".',
@@ -122,6 +122,10 @@ const en = {
   'edit.sp': 'Stat Points',
   'edit.moves': 'Moves',
   'edit.move': 'Move {n}',
+  'edit.spClamped': 'Max {max} per stat and {total} in total',
+  'undo.memberRemoved': '{name} removed',
+  'undo.teamRemoved': 'Team "{name}" deleted',
+  'undo.action': 'Undo',
 
   // Selección
   'pick.noTeam': 'Save your team first to get recommendations.',
@@ -433,7 +437,6 @@ const es: Record<MessageKey, string> = {
     'Te dice qué 4 llevar y con quién abrir; en la Calculadora ves daños y velocidad en partida.',
   'team.saved': 'Equipos guardados',
   'team.delete': 'Borrar {name}',
-  'team.confirmDelete': '¿Borrar el equipo "{name}"?',
   'team.new': '+ Nuevo equipo',
   'team.name': 'Nombre',
   'team.defaultName': 'Mi equipo',
@@ -448,6 +451,7 @@ const es: Record<MessageKey, string> = {
   'team.edit': 'Editar',
   'team.editAria': 'Editar {name}',
   'team.add': 'Añadir Pokémon…',
+  'team.slot': 'Pokémon {n}',
 
   'warn.unknownSpecies': 'No reconozco el Pokémon "{value}".',
   'warn.unknownItem': '{species}: no reconozco el objeto "{value}".',
@@ -473,6 +477,10 @@ const es: Record<MessageKey, string> = {
   'edit.sp': 'Stat Points',
   'edit.moves': 'Movimientos',
   'edit.move': 'Movimiento {n}',
+  'edit.spClamped': 'Máximo {max} por stat y {total} en total',
+  'undo.memberRemoved': '{name} quitado',
+  'undo.teamRemoved': 'Equipo «{name}» borrado',
+  'undo.action': 'Deshacer',
 
   'pick.noTeam': 'Primero guarda tu equipo para recibir recomendaciones.',
   'pick.addTeam': 'Añadir mi equipo',

@@ -132,45 +132,60 @@
           }
         </ul>
       }
-      @if (parsed().members.length) {
-        <div class="grid gap-3 sm:grid-cols-2">
-          @for (member of parsed().members; track member.species; let i = $index) {
-            @if (editing() === i) {
-              <app-member-editor
-                class="sm:col-span-2"
-                [member]="member"
-                (changed)="updateMember(i, $event)"
-                (removed)="removeMember(i)"
-                (done)="editing.set(null)"
-              />
-            } @else {
-              <div class="relative">
-                <app-member-card [member]="member" />
-                <button
-                  type="button"
-                  class="absolute top-2.5 right-2.5 h-8 rounded-lg bg-slate-900 px-2.5 text-xs text-slate-300 ring-1 ring-slate-700 hover:text-amber-200 hover:ring-amber-400/60"
-                  [attr.aria-label]="t('team.editAria', { name: member.species })"
-                  (click)="editing.set(i)"
-                >
-                  {{ t('team.edit') }}
-                </button>
-              </div>
-            }
+      @if (!parsed().members.length) {
+        <p class="text-sm text-slate-400">{{ t('team.empty') }}</p>
+      }
+      <!-- Siempre 6 huecos: los Pokémon que hay y, en el primero libre, el buscador. -->
+      <div class="grid gap-3 sm:grid-cols-2">
+        @for (member of parsed().members; track member.species; let i = $index) {
+          @if (editing() === i) {
+            <app-member-editor
+              class="sm:col-span-2"
+              [member]="member"
+              (changed)="updateMember(i, $event)"
+              (removed)="removeMember(i)"
+              (done)="editing.set(null)"
+            />
+          } @else {
+            <div class="relative">
+              <app-member-card [member]="member" />
+              <button
+                type="button"
+                class="absolute top-2.5 right-2.5 h-8 rounded-lg bg-slate-900 px-2.5 text-xs text-slate-300 ring-1 ring-slate-700 hover:text-amber-200 hover:ring-amber-400/60"
+                [attr.aria-label]="t('team.editAria', { name: member.species })"
+                (click)="editing.set(i)"
+              >
+                {{ t('team.edit') }}
+              </button>
+            </div>
           }
-        </div>
-      } @else {
-        <p class="rounded-xl border border-dashed border-slate-700 p-8 text-center text-slate-400">
-          {{ t('team.empty') }}
-        </p>
-      }
-      @if (parsed().members.length < 6) {
-        <app-species-search
-          [options]="data.speciesOptions()"
-          [exclude]="species()"
-          [placeholder]="t('team.add')"
-          (picked)="addSpecies($event)"
-        />
-      }
+        }
+        @for (slot of emptySlots(); track slot; let first = $first) {
+          @if (first) {
+            <div
+              class="flex min-h-24 flex-col justify-center gap-1.5 rounded-xl border border-dashed border-amber-400/40 p-3"
+            >
+              <span class="text-xs text-slate-400">{{ t('team.slot', { n: slot }) }}</span>
+              <app-species-search
+                [options]="data.speciesOptions()"
+                [exclude]="species()"
+                [placeholder]="t('team.add')"
+                (picked)="addSpecies($event)"
+              />
+            </div>
+          } @else {
+            <button
+              type="button"
+              class="flex min-h-24 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-700 text-slate-500 hover:border-slate-500 hover:text-slate-300"
+              [attr.aria-label]="t('team.add')"
+              (click)="focusSearch()"
+            >
+              <span class="text-2xl leading-none" aria-hidden="true">+</span>
+              <span class="text-xs">{{ t('team.slot', { n: slot }) }}</span>
+            </button>
+          }
+        }
+      </div>
     </div>
   </section>
 </div>
