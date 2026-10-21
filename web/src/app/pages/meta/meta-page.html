@@ -30,7 +30,7 @@
       </p>
     }
 
-    <div class="flex gap-1.5" role="tablist" [attr.aria-label]="t('title.meta')">
+    <div class="flex flex-wrap gap-1.5" role="tablist" [attr.aria-label]="t('title.meta')">
       @for (option of tabs; track option.value) {
         <button
           type="button"
@@ -443,6 +443,124 @@
               </li>
             }
           </ul>
+        </section>
+      }
+      @case ('team') {
+        <section class="flex flex-col gap-3" role="tabpanel">
+          @if (!myTeam().length) {
+            <div
+              class="flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-700 p-8 text-center"
+            >
+              <p class="text-slate-300">{{ t('meta.noTeam') }}</p>
+              <a
+                routerLink="/equipo"
+                class="rounded-lg bg-amber-400 px-4 py-2 font-semibold text-slate-950 hover:bg-amber-300"
+                >{{ t('pick.addTeam') }}</a
+              >
+            </div>
+          } @else {
+            <p class="text-xs text-slate-400">{{ t('meta.threatsHelp', { n: threatCount }) }}</p>
+            @if (!threatsReady()) {
+              <p class="text-sm text-slate-400" role="status">
+                {{ t('meta.computing', { done: threats().length, total: threatsTotal() }) }}
+              </p>
+            } @else {
+              <ul class="flex flex-col gap-1.5">
+                @for (threat of sortedThreats(); track threat.species) {
+                  <li class="rounded-lg bg-slate-900 ring-1 ring-slate-800">
+                    <button
+                      type="button"
+                      class="flex w-full items-start gap-2 rounded-lg p-2 text-left hover:bg-slate-800/60"
+                      [attr.aria-expanded]="expandedThreat() === threat.species"
+                      (click)="toggleThreat(threat.species)"
+                    >
+                      <app-sprite [species]="threat.species" [size]="40" />
+                      <span class="flex min-w-0 flex-1 flex-col gap-1">
+                        <span class="flex items-baseline gap-2">
+                          <span class="truncate font-medium text-slate-100">{{
+                            threat.species
+                          }}</span>
+                          <span class="text-xs text-slate-500 tabular-nums">{{
+                            i18n.percent(threat.usage)
+                          }}</span>
+                        </span>
+                        <span
+                          class="self-start rounded px-1.5 py-0.5 text-xs ring-1 {{
+                            toneClass(threat.unanswered ? 'bad' : 'good')
+                          }}"
+                          >{{
+                            hitLabel(threat.unanswered ? 'meta.noAnswer' : 'meta.answer', threat)
+                          }}</span
+                        >
+                        <span class="flex flex-wrap gap-x-3 text-xs text-slate-400">
+                          @if (threat.ohkos) {
+                            <span [class.text-orange-300]="threat.ohkos >= 2">{{
+                              t('meta.ohkos', { n: threat.ohkos })
+                            }}</span>
+                          }
+                          <span>{{
+                            t('meta.faster', { n: threat.faster, size: myTeam().length })
+                          }}</span>
+                        </span>
+                      </span>
+                    </button>
+
+                    @if (expandedThreat() === threat.species) {
+                      <ul class="flex flex-col gap-2 border-t border-slate-800 p-3 text-sm">
+                        @for (duel of threat.duels; track duel.member) {
+                          <li class="flex items-start gap-2">
+                            <app-sprite [species]="myTeam()[duel.member].species" [size]="32" />
+                            <div class="flex min-w-0 flex-1 flex-col gap-0.5 text-xs">
+                              <div class="flex items-baseline justify-between gap-2">
+                                <span class="truncate text-sm font-medium text-slate-100">{{
+                                  myTeam()[duel.member].species
+                                }}</span>
+                                @if (rivalStatus(threat.species) === 'full') {
+                                  <span class="shrink-0 text-slate-500">{{
+                                    t('meta.rivalFullShort')
+                                  }}</span>
+                                } @else {
+                                  <button
+                                    type="button"
+                                    class="shrink-0 text-slate-400 underline decoration-slate-600 underline-offset-2 hover:text-amber-300"
+                                    (click)="openThreat(threat.species, duel.member)"
+                                  >
+                                    {{ t('meta.openCalc') }}
+                                  </button>
+                                }
+                              </div>
+                              @for (
+                                side of [
+                                  { who: t('meta.you'), hit: duel.mine, attacking: true },
+                                  { who: t('meta.them'), hit: duel.theirs, attacking: false },
+                                ];
+                                track side.who
+                              ) {
+                                <span class="flex flex-wrap items-center gap-1.5 text-slate-300">
+                                  <span class="w-6 text-slate-500">{{ side.who }}</span>
+                                  @if (side.hit; as hit) {
+                                    <span>{{ i18n.move(hit.move) }} {{ range(hit.odds) }}</span>
+                                    @if (ko(hit.odds, side.attacking); as k) {
+                                      <span class="rounded px-1 ring-1 {{ toneClass(k.tone) }}">{{
+                                        k.label
+                                      }}</span>
+                                    }
+                                  } @else {
+                                    <span class="text-slate-500">—</span>
+                                  }
+                                </span>
+                              }
+                              <span class="text-slate-400">{{ firstLabel(duel.first) }}</span>
+                            </div>
+                          </li>
+                        }
+                      </ul>
+                    }
+                  </li>
+                }
+              </ul>
+            }
+          }
         </section>
       }
     }

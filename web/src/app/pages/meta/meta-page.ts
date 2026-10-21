@@ -1,21 +1,25 @@
-import { Component, computed, inject, linkedSignal, resource, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, computed, effect, inject, linkedSignal, resource, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 
 import { archetypePaste } from '../../../engine/archetypes';
+import type { DamageOdds } from '../../../engine/damage';
 import type {
   Archetype,
   ArchetypeSet,
   MetaAnalysisFile,
+  Metagame,
   Shares,
   SpeciesMeta,
   SpeciesUsage,
 } from '../../../engine/metagame';
+import type { TeamMember } from '../../../engine/pokepaste';
+import { type Threat, analyzeThreat, byDanger, metaThreats } from '../../../engine/threats';
 import { CalcState } from '../../data/calc-state.service';
 import { MetagameService } from '../../data/metagame.service';
 import { TeamStore } from '../../data/team-store.service';
 import { I18n } from '../../i18n/i18n.service';
 import type { MessageKey } from '../../i18n/messages';
-import { TONE_CLASSES, type Tone } from '../../shared/format';
+import { TONE_CLASSES, type Tone, koSummary, pct } from '../../shared/format';
 import { Sprite } from '../../shared/sprite';
 
 /** Con menos equipos en alguna de las dos ventanas, la tendencia es ruido y no se enseña. */
@@ -32,7 +36,10 @@ const PAGE_SIZE = 30;
 const WIN_RATE_PRIOR_GAMES = 100;
 const TOP_CUT_PRIOR_ENTRIES = 20;
 
-type Tab = 'species' | 'cores' | 'teams';
+/** Amenazas que se analizan: los más usados del formato que no llevo. */
+const THREATS = 20;
+
+type Tab = 'species' | 'cores' | 'teams' | 'team';
 type TeamSort = 'usage' | 'winRate' | 'topCuts';
 
 interface ArchetypeView extends Archetype {
@@ -66,6 +73,8 @@ export class MetaPage {
   protected readonly data = inject(MetagameService);
   private readonly state = inject(CalcState);
   private readonly teams = inject(TeamStore);
+  private readonly router = inject(Router);
+  protected readonly myTeam = this.teams.activeMembers;
 
   private readonly file = resource({
     params: () => this.data.metagame()?.meta.format,
@@ -84,6 +93,7 @@ export class MetaPage {
     { value: 'species', label: 'meta.tabSpecies' },
     { value: 'cores', label: 'meta.tabCores' },
     { value: 'teams', label: 'meta.tabTeams' },
+    { value: 'team', label: 'meta.tabYourTeam' },
   ];
   protected readonly tab = signal<Tab>('species');
   protected readonly query = signal('');
@@ -180,6 +190,91 @@ export class MetaPage {
       }
     }
   });
+
+  /** Amenazas ya calculadas y cuántas hay en total (se calculan de una en una, ver abajo). */
+  protected readonly threats = signal<Threat[]>([]);
+  protected readonly threatsTotal = signal(0);
+  protected readonly threatsReady = computed(
+    () => this.threatsTotal() > 0 && this.threats().length === this.threatsTotal(),
+  );
+  protected readonly sortedThreats = computed(() => [...this.threats()].sort(byDanger));
+  protected readonly expandedThreat = signal<string | null>(null);
+  protected readonly threatCount = THREATS;
+  /** Equipo y datos de los que salen las amenazas calculadas (para no repetir el cálculo). */
+  private threatsFor?: { team: readonly TeamMember[]; data: Metagame };
+  private threatsRun = 0;
+
+  constructor() {
+    // Solo al abrir la pestaña, y otra vez si cambia el equipo o los datos.
+    effect(() => {
+      const metagame = this.data.metagame();
+      const team = this.myTeam();
+      if (this.tab() !== 'team' || !metagame || !team.length) return;
+      if (this.threatsFor?.team === team && this.threatsFor.data === metagame) return;
+      this.threatsFor = { team, data: metagame };
+      void this.computeThreats(metagame, team);
+    });
+  }
+
+  /**
+   * Unas 20 amenazas pueden tardar un par de segundos en un móvil: se calculan de una en una,
+   * dejando respirar a la página entre medias. Si empieza otro cálculo, este se abandona.
+   */
+  private async computeThreats(metagame: Metagame, team: readonly TeamMember[]): Promise<void> {
+    const run = ++this.threatsRun;
+    const species = metaThreats(metagame, team, THREATS);
+    this.threats.set([]);
+    this.threatsTotal.set(species.length);
+    for (const s of species) {
+      await new Promise((resolve) => setTimeout(resolve));
+      if (run !== this.threatsRun) return;
+      const threat = analyzeThreat(metagame, team, s);
+      this.threats.update((list) => [...list, threat]);
+    }
+  }
+
+  protected toggleThreat(species: string): void {
+    this.expandedThreat.update((current) => (current === species ? null : species));
+  }
+
+  /** "Garchomp · Terremoto 62–74%". */
+  protected hitLabel(key: 'meta.answer' | 'meta.noAnswer', threat: Threat): string {
+    const duel = threat.answer;
+    if (!duel?.mine) return this.t('meta.noDamage');
+    return this.t(key, {
+      member: this.myTeam()[duel.member]?.species ?? '',
+      move: this.i18n.move(duel.mine.move),
+      range: this.range(duel.mine.odds),
+    });
+  }
+
+  protected range(odds: DamageOdds): string {
+    const { minPercent, maxPercent } = odds.likely;
+    return `${Math.round(minPercent)}–${Math.round(maxPercent)}%`;
+  }
+
+  /** Cuántos golpes: el mismo resumen que en la calculadora. */
+  protected ko(odds: DamageOdds, attacking: boolean): { label: string; tone: Tone } {
+    return koSummary(odds, attacking, this.t);
+  }
+
+  protected toneClass(tone: Tone): string {
+    return TONE_CLASSES[tone];
+  }
+
+  protected firstLabel(first: number): string {
+    return this.t('meta.youFirst', { pct: pct(first) });
+  }
+
+  /** Abre el duelo en la calculadora; si la amenaza no está en el equipo rival, la añade. */
+  protected openThreat(species: string, member: number): void {
+    if (!this.state.rivalTeam().includes(species)) this.addRival(species);
+    const rivalIndex = this.state.rivals().indexOf(species);
+    if (rivalIndex < 0) return;
+    this.state.myIndex.set(member);
+    this.state.rivalIndex.set(rivalIndex);
+    void this.router.navigate(['/calculadora']);
+  }
 
   protected toggleTeam(key: string): void {
     this.expandedTeam.update((current) => (current === key ? null : key));

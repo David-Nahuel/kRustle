@@ -21,7 +21,9 @@ Herramientas para Pokémon Champions (VGC):
   Además, un ranking de equipos (los mismos 6 Pokémon llevados al menos 15 veces) por uso, winrate
   o porcentaje de top 8, con sus mejores resultados y sus sets más llevados: se puede usar como
   equipo propio (con los Stat Points más comunes del ladder, que Limitless no publica) o cargar
-  como rival.
+  como rival. Y las amenazas del meta para tu equipo: los 20 Pokémon más usados que no llevas,
+  ordenados por lo mal que los cubres (quién los debilita, a cuántos de los tuyos debilitan de un
+  golpe, quién es más rápido), con el detalle de cada duelo y un enlace a la calculadora.
 - **Modo partida** (dentro de la calculadora): PS, estados y cambios de stat de cada Pokémon, y lo que
   revela el rival (objeto, habilidad, movimientos), que reajusta la inferencia de su set. Se guarda
   en el navegador por si se recarga a mitad de combate.
@@ -128,6 +130,7 @@ npm install
 npm start        # http://localhost:4200
 npm test         # tests del motor (Vitest)
 npm run validate # acierto de la inferencia de sets con datos reales (M-C por defecto)
+npm run validate-pick -- M-C 400 # si el recomendador predice quién gana (tarda; ver abajo)
 npm run e2e      # pruebas de humo sobre el build (tras `ng build`; usa Edge, o PW_CHANNEL=chrome)
 ```
 
@@ -171,6 +174,14 @@ El cálculo de daño usa la mecánica de Champions de [@smogon/calc](https://git
    ya suelen ir después.
 
 Es una estimación por 1 contra 1: no simula combos de dobles. Tarda ~75 ms en el navegador.
+
+**Lo que no puede hacer: predecir quién gana.** `npm run validate-pick` lo mide con los
+enfrentamientos reales de los últimos 15 torneos (aprendiendo de los anteriores). En M-C, que gane
+quien más puntúa acierta el 52%; las referencias que solo miran datos (winrate de las especies,
+cómo les va a unas contra otras) llegan al 54%, y combinarlas apenas mejora sobre decir siempre
+50%. No es un fallo del modelo: en los datos, que un Pokémon le gane a otro mueve el resultado
+unos ±3 puntos; el resto lo deciden los jugadores. Por eso la app no enseña probabilidades de
+victoria entre equipos, sino daño y velocidad, que sí se calculan con exactitud.
 
 ### Sprites y roster
 

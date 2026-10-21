@@ -201,6 +201,8 @@ export interface Metagame {
   teamPlayer: number[];
   /** Jugador → sus equipos, del más antiguo al más reciente. */
   playerTeams: Map<number, number[]>;
+  /** Enfrentamientos entre equipos (`[equipoA, equipoB, resultado]`, como en `teams.json`). */
+  matches: TeamsFile['matches'];
   /** Pokémon legales (vacío si no hay `roster.json`). */
   legalSpecies: string[];
   /** Especie → todas sus habilidades, según `roster.json` (vacío si no lo hay). */
@@ -292,6 +294,7 @@ export function buildMetagame(
     players: file.players ?? [],
     teamPlayer,
     playerTeams,
+    matches: file.matches,
     legalSpecies: roster?.species.map((s) => s.name) ?? [],
     speciesAbilities: new Map(roster?.species.map((s) => [s.name, s.abilities ?? []])),
     sprites: new Map(roster?.species.map((s) => [s.name, s.sprite])),
