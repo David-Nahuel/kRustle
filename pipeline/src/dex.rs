@@ -70,6 +70,8 @@ pub struct Dex {
     sprite_ids: HashMap<String, String>,
     /// Nombre en team preview → sus habilidades (la normal, la segunda y la oculta).
     species_abilities: HashMap<String, Vec<String>>,
+    /// Piedra → habilidades de la mega en la que se convierte ("Charizardite Y" → Drought).
+    stone_abilities: HashMap<String, Vec<String>>,
     moves: HashMap<String, String>,
     /// id de movimiento → datos completos de Showdown (prioridad, objetivo, flags...).
     move_data: HashMap<String, Value>,
@@ -89,6 +91,7 @@ impl Dex {
         let mut species = HashMap::new();
         let mut sprite_ids = HashMap::new();
         let mut species_abilities = HashMap::new();
+        let mut stone_abilities = HashMap::new();
         let mut megas = Vec::new();
         // `{"0": ..., "1": ..., "H": ...}`: las claves ordenadas dan ese mismo orden.
         let abilities_of = |v: &Value| -> Vec<String> {
@@ -105,6 +108,9 @@ impl Dex {
             let forme = v["forme"].as_str().unwrap_or("");
             let base = v["baseSpecies"].as_str();
             if forme.contains("Mega") || forme == "Primal" {
+                if let Some(stone) = v["requiredItem"].as_str() {
+                    stone_abilities.insert(stone.to_string(), abilities_of(&v));
+                }
                 megas.push((id, name.to_string(), base.unwrap_or(name).to_string()));
             } else {
                 sprite_ids.insert(name.to_string(), sprite_id(name, base, forme));
@@ -127,6 +133,7 @@ impl Dex {
             species,
             sprite_ids,
             species_abilities,
+            stone_abilities,
             moves: names(moves.clone()),
             move_data: moves.into_iter().collect(),
             items: names(items.clone()),
@@ -155,6 +162,17 @@ impl Dex {
         self.species_abilities
             .get(preview_name)
             .map_or(&[], Vec::as_slice)
+    }
+
+    /// Si un set puede llevar esa habilidad: una de la especie o, con su piedra, de la mega (en
+    /// las hojas de equipo se suele apuntar la de la mega: Drought en Charizard con Charizardite Y).
+    /// Sin datos de la especie no se descarta nada.
+    pub fn allows_ability(&self, preview_name: &str, item: Option<&str>, ability: &str) -> bool {
+        let own = self.species_abilities(preview_name);
+        let mega = item
+            .and_then(|i| self.stone_abilities.get(i))
+            .map_or(&[][..], Vec::as_slice);
+        own.is_empty() || own.iter().chain(mega).any(|a| a == ability)
     }
 
     /// Nombre de una especie por su id de Showdown (sin pasar a especie base).
@@ -441,6 +459,7 @@ mod tests {
             .collect(),
             sprite_ids: HashMap::new(),
             species_abilities: HashMap::new(),
+            stone_abilities: HashMap::new(),
             item_icons: HashMap::new(),
             move_data: HashMap::new(),
             moves: table(&[
