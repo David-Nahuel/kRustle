@@ -23,6 +23,10 @@ on:
       format:
         description: "Formato de Limitless (M-C, M-D...)"
         required: false
+      accept_drop:
+        description: "Aceptar caída de datos (publicar aunque haya bastantes menos equipos que antes)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -32,12 +36,22 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Formato, lint y tests (ci.yml). En la ejecución diaria el código no cambia, así que se
+  # salta: una lint nueva de clippy en Rust estable no debe frenar la actualización de datos.
+  checks:
+    if: github.event_name != 'schedule'
+    uses: ./.github/workflows/ci.yml
+
   deploy:
+    needs: checks
+    # Se despliega si las comprobaciones pasan o se han saltado (ejecución diaria).
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     # La primera descarga de un formato tarda ~1 h por el rate limit de Limitless (50 peticiones / 5 min).
     timeout-minutes: 180
     env:
       FORMAT: ${{ inputs.format || vars.KRUSTLE_FORMAT || 'M-C' }}
+      ACCEPT_DROP: ${{ inputs.accept_drop && '--accept-drop' || '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -57,11 +71,11 @@ jobs:
           key: pipeline-${{ github.run_id }}
           restore-keys: pipeline-
 
-      - name: Tests del pipeline
-        run: cargo test --manifest-path pipeline/Cargo.toml
-
+      # Si Limitless, Smogon o un sprite fallan, se sigue con lo que haya en caché y se avisa
+      # con una anotación en el resumen de la ejecución. Si la muestra sale vacía o con muchos
+      # menos equipos que la anterior, falla y se queda la versión publicada (ver accept_drop).
       - name: Datos (Limitless, Smogon, Showdown, PokeAPI) y sprites
-        run: cargo run --release --manifest-path pipeline/Cargo.toml -- update --format "$FORMAT"
+        run: cargo run --release --manifest-path pipeline/Cargo.toml -- update --format "$FORMAT" $ACCEPT_DROP
 
       - uses: actions/setup-node@v4
         with:
@@ -69,12 +83,29 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
 
-      - name: Tests y build de la web
+      - name: Build de la web
         working-directory: web
         run: |
           npm ci
-          npm test -- --watch=false
           npx ng build
+
+      # Con los datos nuevos, cada página arranca y pinta lo principal sin errores; si no, no se
+      # publica y se queda la versión anterior. Usa el Chrome que ya trae el runner.
+      - name: Prueba de humo
+        working-directory: web
+        run: npm run e2e
+
+      # Informativo: el acierto de la inferencia con los datos nuevos, en el resumen de la ejecución.
+      - name: Acierto de la inferencia
+        continue-on-error: true
+        working-directory: web
+        run: |
+          {
+            echo '### Acierto de la inferencia'
+            echo '```'
+            npm run validate --silent -- "$FORMAT"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       # Build Output API de Vercel: se sube la web ya construida y Vercel solo la sirve.
       - name: Preparar el despliegue

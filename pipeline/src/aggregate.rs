@@ -10,7 +10,7 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::Path;
 
-use anyhow::Result;
+use anyhow::{Result, bail};
 use chrono::Utc;
 use serde::Serialize;
 use serde_json::Value;
@@ -25,10 +25,17 @@ pub struct BuildOptions {
     /// Proporción mínima de Pokémon del top del formato que deben usar, de media, los equipos
     /// de un torneo para no considerarlo temático (ver `drop_off_meta`).
     pub min_meta_overlap: f64,
+    /// Publica aunque la muestra haya caído más de `MAX_TEAM_DROP` respecto a la build anterior.
+    pub accept_drop: bool,
 }
 
 /// Cuántas especies forman el "top" con el que se mide si un torneo es temático.
 const TOP_SPECIES: usize = 30;
+
+/// Los equipos se acumulan a lo largo del formato, así que una caída mayor que esta respecto a la
+/// build anterior apunta a un problema (respuestas raras de Limitless, caché a medias, un fallo en
+/// la normalización) y no se publica.
+const MAX_TEAM_DROP: f64 = 0.25;
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 struct Set {
@@ -110,7 +117,6 @@ pub fn build(
             .map(|d| (now - d).num_seconds() as f64 / 86_400.0)
             .unwrap_or(0.0)
             .max(0.0);
-        let recency = 0.5f64.powf(age_days / opts.half_life_days);
 
         let mut team_of_player: HashMap<String, usize> = HashMap::new();
         for s in cache.load_standings(&t.id)? {
@@ -120,9 +126,6 @@ pub fn build(
             match parse_team(decklist, &mut norm) {
                 Ok(sets) => {
                     let record = s.record.unwrap_or_default();
-                    // Laplace: un 0-0 cuenta como 50%, así un buen resultado pesa más sin anular al resto.
-                    let win_rate =
-                        (record.wins as f64 + 1.0) / ((record.wins + record.losses) as f64 + 2.0);
                     let player = s.player.to_lowercase();
                     team_of_player.insert(player.clone(), teams.len());
                     teams.push(Team {
@@ -131,7 +134,7 @@ pub fn build(
                         player,
                         record,
                         sets,
-                        weight: recency * (0.5 + win_rate),
+                        weight: team_weight(age_days, opts.half_life_days, record),
                     });
                 }
                 Err(reason) => *report.dropped_teams.entry(reason).or_default() += 1,
@@ -180,6 +183,11 @@ pub fn build(
     report.teams_used = teams.len();
     report.matches_used = matches.len();
 
+    // Antes de escribir nada: si la muestra no es fiable, se queda la versión publicada.
+    let report_path = cache_root.join(format!("report-{format}.json"));
+    let previous_teams = previous_teams(&report_path);
+    check_sample(format, previous_teams, teams.len(), opts.accept_drop)?;
+
     let out_dir = out_root.join(format);
     let usage = usage_stats(&teams, &matches);
     limitless::write_atomic(&out_dir.join("usage.json"), &serde_json::to_string(&usage)?)?;
@@ -222,8 +230,8 @@ pub fn build(
     unresolved.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
     report.unresolved_names = unresolved;
     report.fuzzy_corrections = norm.fuzzy;
-    let report_path = cache_root.join(format!("report-{format}.json"));
     limitless::write_atomic(&report_path, &serde_json::to_string_pretty(&report)?)?;
+    write_step_summary(format, &report, previous_teams)?;
 
     println!(
         "{format}: {} torneos, {} equipos, {} enfrentamientos → {}",
@@ -256,6 +264,89 @@ pub fn build(
     for (name, n) in report.unresolved_names.iter().take(10) {
         println!("    {n:>5}× {name}");
     }
+    Ok(())
+}
+
+/// Peso de un equipo: lo reciente y lo que gana cuenta más. La web lo recalcula igual
+/// (`teamWeight` en `web/src/engine/metagame.ts`); `team-weight-cases.json` comprueba que coinciden.
+fn team_weight(age_days: f64, half_life_days: f64, record: Record) -> f64 {
+    let recency = 0.5f64.powf(age_days / half_life_days);
+    // Laplace: un 0-0 cuenta como 50%, así un buen resultado pesa más sin anular al resto.
+    let win_rate = (record.wins as f64 + 1.0) / ((record.wins + record.losses) as f64 + 2.0);
+    recency * (0.5 + win_rate)
+}
+
+/// Equipos de la build anterior del formato, según su informe (si lo hay).
+fn previous_teams(report_path: &Path) -> Option<usize> {
+    let text = std::fs::read_to_string(report_path).ok()?;
+    let report: Value = serde_json::from_str(&text).ok()?;
+    report.get("teamsUsed")?.as_u64().map(|n| n as usize)
+}
+
+/// Falla si la muestra está vacía o ha caído demasiado respecto a la build anterior.
+fn check_sample(
+    format: &str,
+    previous: Option<usize>,
+    teams: usize,
+    accept_drop: bool,
+) -> Result<()> {
+    if teams == 0 {
+        bail!(
+            "{format}: no hay ningún equipo con el que generar los datos \
+             (¿formato sin torneos todavía o caché vacía?)"
+        );
+    }
+    if let Some(previous) = previous
+        && !accept_drop
+        && (teams as f64) < previous as f64 * (1.0 - MAX_TEAM_DROP)
+    {
+        bail!(
+            "{format}: {teams} equipos frente a {previous} en la build anterior. \
+             Si la caída es correcta, repite con --accept-drop \
+             (en GitHub, lanza el workflow a mano marcando \"Aceptar caída de datos\")"
+        );
+    }
+    Ok(())
+}
+
+/// En GitHub Actions, un resumen de la muestra en la página de la ejecución, con los nombres
+/// que no se han podido resolver para ir completando `aliases.json` sin abrir la caché.
+fn write_step_summary(format: &str, report: &Report, previous_teams: Option<usize>) -> Result<()> {
+    let Some(path) = std::env::var_os("GITHUB_STEP_SUMMARY") else {
+        return Ok(());
+    };
+    let previous = previous_teams.map_or(String::new(), |n| format!(" (antes: {n})"));
+    let mut md = format!(
+        "### Datos {format}\n\n\
+         - Torneos: {} ({} pendientes de descarga, {} temáticos descartados, {} sin equipos)\n\
+         - Equipos: {}{previous}\n\
+         - Enfrentamientos: {}\n\
+         - Equipos descartados: {}\n\
+         - Correcciones aproximadas: {}\n",
+        report.tournaments_used,
+        report.tournaments_pending_download,
+        report.tournaments_off_meta,
+        report.tournaments_without_teams,
+        report.teams_used,
+        report.matches_used,
+        report.dropped_teams.values().sum::<u32>(),
+        report.fuzzy_corrections.len(),
+    );
+    if !report.unresolved_names.is_empty() {
+        md += &format!(
+            "\n**Nombres sin resolver** ({}; los frecuentes van a `pipeline/aliases.json`):\n\n",
+            report.unresolved_names.len()
+        );
+        for (name, n) in report.unresolved_names.iter().take(15) {
+            md += &format!("- {n}× `{name}`\n");
+        }
+    }
+    md += "\n";
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)?;
+    std::io::Write::write_all(&mut file, md.as_bytes())?;
     Ok(())
 }
 
@@ -675,6 +766,50 @@ mod tests {
                 })
                 .collect(),
         }
+    }
+
+    #[test]
+    fn team_weight_matches_shared_cases() {
+        #[derive(serde::Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct Case {
+            age_days: f64,
+            half_life_days: f64,
+            wins: u32,
+            losses: u32,
+            weight: f64,
+        }
+        #[derive(serde::Deserialize)]
+        struct Cases {
+            cases: Vec<Case>,
+        }
+        let file: Cases = serde_json::from_str(include_str!("../team-weight-cases.json")).unwrap();
+        for c in file.cases {
+            let record = Record {
+                wins: c.wins,
+                losses: c.losses,
+                ties: 0,
+            };
+            let weight = team_weight(c.age_days, c.half_life_days, record);
+            assert!(
+                (weight - c.weight).abs() < 1e-6,
+                "{} días, {}-{}: {weight} en lugar de {}",
+                c.age_days,
+                c.wins,
+                c.losses,
+                c.weight
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_empty_or_shrunken_samples() {
+        assert!(check_sample("M-C", None, 0, true).is_err());
+        assert!(check_sample("M-C", None, 50, false).is_ok());
+        assert!(check_sample("M-C", Some(1000), 1100, false).is_ok());
+        assert!(check_sample("M-C", Some(1000), 800, false).is_ok());
+        assert!(check_sample("M-C", Some(1000), 700, false).is_err());
+        assert!(check_sample("M-C", Some(1000), 700, true).is_ok());
     }
 
     #[test]
