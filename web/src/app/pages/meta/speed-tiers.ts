@@ -1,7 +1,13 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
-import { type SpeedEntry, type SpeedTierOptions, speedTiers } from '../../../engine/speed-tiers';
+import type { FieldState } from '../../../engine/damage';
+import {
+  type SpeedEntry,
+  type SpeedTierOptions,
+  speedConditions,
+  speedTiers,
+} from '../../../engine/speed-tiers';
 import { CalcState } from '../../data/calc-state.service';
 import { MetagameService } from '../../data/metagame.service';
 import { TeamStore } from '../../data/team-store.service';
@@ -14,7 +20,9 @@ const SPEED_ITEMS = new Set(['Choice Scarf', 'Iron Ball']);
 
 /**
  * Pestaña de velocidades en Meta: tus Pokémon entre los más usados del formato, con Tailwind de
- * cada lado y Trick Room. Desde cada rival se abre la calculadora contra tu Pokémon elegido.
+ * cada lado, Trick Room y los climas que cambian algo en la tabla (solo esos: en mitad de un
+ * combate y en el móvil sobran los demás). Desde cada rival se abre la calculadora contra tu
+ * Pokémon elegido.
  */
 @Component({
   selector: 'app-speed-tiers',
@@ -37,6 +45,21 @@ const SPEED_ITEMS = new Set(['Choice Scarf', 'Iron Ball']);
             (click)="flip(toggle.key)"
           >
             {{ toggle.label() }}
+          </button>
+        }
+        @for (c of conditions(); track c.weather ?? c.terrain) {
+          <button
+            type="button"
+            class="h-9 rounded-lg px-3 text-sm ring-1"
+            [class]="
+              isOn(c)
+                ? 'bg-amber-400/15 text-amber-200 ring-amber-400/60'
+                : 'text-slate-300 ring-slate-700 hover:text-slate-100'
+            "
+            [attr.aria-pressed]="isOn(c)"
+            (click)="flipCondition(c)"
+          >
+            {{ conditionLabel(c) }}
           </button>
         }
       </div>
@@ -73,6 +96,18 @@ const SPEED_ITEMS = new Set(['Choice Scarf', 'Iron Ball']);
                   [class]="entry.member !== undefined ? 'text-emerald-200' : 'text-slate-200'"
                   >{{ entry.species }}</span
                 >
+                @if (entry.boosted) {
+                  <span
+                    class="shrink-0 rounded px-1 text-xs font-semibold text-amber-200 ring-1 ring-amber-400/50"
+                    [title]="
+                      i18n.t('speed.tiersBoosted', { ability: i18n.ability(entry.ability!) })
+                    "
+                    [attr.aria-label]="
+                      i18n.t('speed.tiersBoosted', { ability: i18n.ability(entry.ability!) })
+                    "
+                    >×2</span
+                  >
+                }
                 @if (entry.item && speedItems.has(entry.item)) {
                   <span class="flex shrink-0 items-center gap-1 text-xs text-amber-200">
                     <app-item-icon [item]="entry.item" />{{ i18n.item(entry.item) }}
@@ -151,6 +186,31 @@ export class SpeedTiers {
     return metagame ? speedTiers(metagame, this.myTeam(), this.options()) : [];
   });
 
+  /** Los climas y terrenos que cambian alguna velocidad de la tabla. */
+  protected readonly conditions = computed(() => speedConditions(this.tiers()));
+
+  protected isOn(c: Pick<FieldState, 'weather' | 'terrain'>): boolean {
+    const o = this.options();
+    return c.weather ? o.weather === c.weather : o.terrain === c.terrain;
+  }
+
+  /** Un solo clima a la vez: elegir otro cambia el anterior. */
+  protected flipCondition(c: Pick<FieldState, 'weather' | 'terrain'>): void {
+    const on = this.isOn(c);
+    this.options.update((o) =>
+      c.weather
+        ? { ...o, weather: on ? undefined : c.weather }
+        : { ...o, terrain: on ? undefined : c.terrain },
+    );
+  }
+
+  protected conditionLabel(c: Pick<FieldState, 'weather' | 'terrain'>): string {
+    if (c.weather) return this.i18n.t(`weather.${c.weather}`);
+    return c.terrain
+      ? this.i18n.t('speed.tiersTerrain', { terrain: this.i18n.t(`terrain.${c.terrain}`) })
+      : '';
+  }
+
   /** Está en el equipo rival o cabe en él. */
   protected canOpen(entry: SpeedEntry): boolean {
     const team = this.state.rivalTeam();
@@ -163,7 +223,8 @@ export class SpeedTiers {
 
   /**
    * La calculadora contra este rival, con tu Pokémon elegido allí y el mismo Tailwind y Trick
-   * Room que aquí. Si no está en el equipo rival y cabe, se añade.
+   * Room que aquí, y el clima si se ha elegido uno (si no, el que ya hubiera). Si no está en el
+   * equipo rival y cabe, se añade.
    */
   protected openInCalc(entry: SpeedEntry): void {
     const state = this.state;
@@ -173,8 +234,13 @@ export class SpeedTiers {
       state.setRival(slot, entry.species);
     }
     state.rivalIndex.set(state.rivals().indexOf(entry.species));
-    const { myTailwind, theirTailwind, trickRoom } = this.options();
-    state.field.update((f) => ({ ...f, trickRoom: !!trickRoom }));
+    const { myTailwind, theirTailwind, trickRoom, weather, terrain } = this.options();
+    state.field.update((f) => ({
+      ...f,
+      trickRoom: !!trickRoom,
+      weather: weather ?? f.weather,
+      terrain: terrain ?? f.terrain,
+    }));
     state.mySide.update((s) => ({ ...s, tailwind: !!myTailwind }));
     state.theirSide.update((s) => ({ ...s, tailwind: !!theirTailwind }));
     void this.router.navigate(['/calculadora']);

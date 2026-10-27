@@ -4,7 +4,7 @@ import { emptyStats } from './champions';
 import { type Meta, type TeamsFile, buildMetagame } from './metagame';
 import type { TeamMember } from './pokepaste';
 
-import { speedTiers } from './speed-tiers';
+import { speedConditions, speedTiers } from './speed-tiers';
 import { speedStat } from './speed';
 
 const META: Meta = {
@@ -18,27 +18,29 @@ const META: Meta = {
   lastDate: null,
 };
 
-// Un único equipo rival conocido: Incineroar con Sitrus y Garchomp con Scarf.
+// Un único equipo rival conocido: Incineroar con Sitrus, Garchomp con Scarf y Venusaur con
+// Chlorophyll.
 const TEAMS: TeamsFile = {
-  species: ['Incineroar', 'Garchomp'],
-  items: ['Sitrus Berry', 'Choice Scarf'],
-  abilities: ['Intimidate', 'Rough Skin'],
-  natures: ['Careful', 'Jolly'],
-  moves: ['Fake Out', 'Flare Blitz', 'Earthquake', 'Dragon Claw'],
+  species: ['Incineroar', 'Garchomp', 'Venusaur'],
+  items: ['Sitrus Berry', 'Choice Scarf', 'Life Orb'],
+  abilities: ['Intimidate', 'Rough Skin', 'Chlorophyll'],
+  natures: ['Careful', 'Jolly', 'Modest'],
+  moves: ['Fake Out', 'Flare Blitz', 'Earthquake', 'Dragon Claw', 'Sleep Powder'],
   sets: [
     [0, 0, 0, 0, [0, 1]],
     [1, 1, 1, 1, [2, 3]],
+    [2, 2, 2, 2, [4]],
   ],
   tournaments: [{ id: 't', name: 'T', date: '2026-10-19T00:00:00Z', players: 8 }],
-  teams: [[0, 3, 3, 0, 0, 1]],
+  teams: [[0, 3, 3, 0, 0, 1, 2]],
   matches: [],
 };
 
 const metagame = buildMetagame(
   {
     meta: META,
-    // Uso: Incineroar y Garchomp son "el meta" de estos datos.
-    usage: (['Incineroar', 'Garchomp'] as const).map((species) => ({
+    // Uso: Incineroar, Garchomp y Venusaur son "el meta" de estos datos.
+    usage: (['Incineroar', 'Garchomp', 'Venusaur'] as const).map((species) => ({
       species,
       teams: 1,
       usage: 1,
@@ -73,7 +75,12 @@ const me: TeamMember = {
 describe('speedTiers', () => {
   it('tus Pokémon entre los del meta, de más rápido a más lento', () => {
     const tiers = speedTiers(metagame, [me]);
-    expect(tiers.map((t) => t.species).sort()).toEqual(['Garchomp', 'Incineroar', 'Rillaboom']);
+    expect(tiers.map((t) => t.species).sort()).toEqual([
+      'Garchomp',
+      'Incineroar',
+      'Rillaboom',
+      'Venusaur',
+    ]);
     const speeds = tiers.map((t) => t.speed);
     expect(speeds).toEqual([...speeds].sort((a, b) => b - a));
     const mine = tiers.find((t) => t.member === 0)!;
@@ -114,5 +121,43 @@ describe('speedTiers', () => {
     expect(speedOf(mineTw, true)).toBe(speedOf(base, true) * 2);
     expect(speedOf(theirsTw, false)).toBeGreaterThan(speedOf(base, false));
     expect(speedOf(theirsTw, true)).toBe(speedOf(base, true));
+  });
+
+  it('con sol, Chlorophyll duplica la velocidad del Venusaur rival, y solo la suya', () => {
+    const base = speedTiers(metagame, [me]);
+    const sun = speedTiers(metagame, [me], { weather: 'Sun' });
+    const of = (tiers: typeof base, species: string) => tiers.find((t) => t.species === species)!;
+    expect(of(sun, 'Venusaur').speed).toBe(of(base, 'Venusaur').speed * 2);
+    expect(of(sun, 'Venusaur').range).toEqual(of(base, 'Venusaur').range.map((v) => v * 2));
+    expect(of(sun, 'Venusaur').boosted).toBe(true);
+    expect(of(base, 'Venusaur').boosted).toBe(false);
+    expect(of(sun, 'Garchomp').speed).toBe(of(base, 'Garchomp').speed);
+    // Con lluvia, nada cambia: no hay nadie con Swift Swim.
+    expect(speedTiers(metagame, [me], { weather: 'Rain' })).toEqual(base);
+  });
+
+  it('tu Swift Swim cuenta con lluvia, también al comparar con los rivales', () => {
+    const swimmer: TeamMember = {
+      species: 'Basculegion',
+      item: 'Choice Scarf',
+      ability: 'Swift Swim',
+      nature: 'Adamant',
+      sps: emptyStats(),
+      moves: ['Wave Crash'],
+    };
+    const dry = speedTiers(metagame, [swimmer]).find((t) => t.member === 0)!;
+    const rain = speedTiers(metagame, [swimmer], { weather: 'Rain' }).find((t) => t.member === 0)!;
+    expect(rain.speed).toBe(speedStat(swimmer, { field: { weather: 'Rain' } }));
+    expect(rain.speed).toBeGreaterThan(dry.speed);
+    expect(rain.versus!.first).toBeGreaterThanOrEqual(dry.versus!.first);
+  });
+
+  it('solo ofrece los climas que cambian algo en la tabla', () => {
+    expect(speedConditions(speedTiers(metagame, [me]))).toEqual([{ weather: 'Sun' }]);
+    const swimmer: TeamMember = { ...me, species: 'Basculegion', ability: 'Swift Swim' };
+    expect(speedConditions(speedTiers(metagame, [swimmer]))).toEqual([
+      { weather: 'Rain' },
+      { weather: 'Sun' },
+    ]);
   });
 });

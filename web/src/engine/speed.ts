@@ -6,14 +6,21 @@ export interface SpeedContext {
   tailwind?: boolean;
 }
 
-/** Habilidades que duplican la velocidad con un clima o terreno. */
-const WEATHER_SPEED: Record<string, (field: FieldState) => boolean> = {
-  'Swift Swim': (f) => f.weather === 'Rain',
-  Chlorophyll: (f) => f.weather === 'Sun',
-  'Sand Rush': (f) => f.weather === 'Sand',
-  'Slush Rush': (f) => f.weather === 'Snow',
-  'Surge Surfer': (f) => f.terrain === 'Electric',
+/** Habilidades que duplican la velocidad con un clima o terreno, y cuál. */
+export const WEATHER_SPEED: Record<string, Pick<FieldState, 'weather' | 'terrain'>> = {
+  'Swift Swim': { weather: 'Rain' },
+  Chlorophyll: { weather: 'Sun' },
+  'Sand Rush': { weather: 'Sand' },
+  'Slush Rush': { weather: 'Snow' },
+  'Surge Surfer': { terrain: 'Electric' },
 };
+
+/** Si la habilidad duplica la velocidad con este clima o terreno. */
+export function weatherBoosted(ability: string | undefined, field: FieldState): boolean {
+  const needs = ability ? WEATHER_SPEED[ability] : undefined;
+  if (!needs) return false;
+  return needs.weather ? field.weather === needs.weather : field.terrain === needs.terrain;
+}
 
 /**
  * Velocidad efectiva en combate, con el mismo orden de redondeos que Showdown:
@@ -35,7 +42,7 @@ export function speedStat(
   // Unburden: velocidad doble en cuanto pierde el objeto.
   if (ability === 'Unburden' && c.itemConsumed) modifier = chain(modifier, 8192);
   if (tailwind) modifier = chain(modifier, 8192);
-  if (WEATHER_SPEED[ability]?.(field)) modifier = chain(modifier, 8192);
+  if (weatherBoosted(ability, field)) modifier = chain(modifier, 8192);
   if (ability === 'Quick Feet' && c.status) modifier = chain(modifier, 6144);
   speed = pokeRound((speed * modifier) / 4096);
 

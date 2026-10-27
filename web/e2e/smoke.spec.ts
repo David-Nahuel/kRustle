@@ -230,6 +230,28 @@ test('La tabla de velocidades ordena el meta y Trick Room le da la vuelta', asyn
   expect(errors).toEqual([]);
 });
 
+test('Un clima de la tabla de velocidades duplica a quien tiene su habilidad', async ({
+  page,
+  request,
+}) => {
+  const { errors } = await setUp(page, request);
+  await page.goto('/meta');
+  await page.getByRole('tab', { name: 'Speed' }).click();
+  await expect(page.locator('app-speed-tiers li').first()).toBeVisible({ timeout: 30_000 });
+  // Solo salen los climas que cambian algo, y cuáles depende de los datos del día.
+  const weather = page
+    .locator('app-speed-tiers [role=group] button')
+    .filter({ hasText: /^\s*(Sun|Rain|Sand|Snow|Electric Terrain)\s*$/ });
+  const boosted = page.locator('app-speed-tiers li').getByText('×2');
+  await expect(boosted).toHaveCount(0);
+  if (await weather.count()) {
+    await weather.first().click();
+    await expect(weather.first()).toHaveAttribute('aria-pressed', 'true');
+    await expect(boosted.first()).toBeVisible();
+  }
+  expect(errors).toEqual([]);
+});
+
 test('El historial de equipos como el tuyo sale en "Tu equipo"', async ({ page, request }) => {
   const { errors } = await setUp(page, request);
   await page.goto('/meta');
