@@ -137,7 +137,7 @@ const NATURES = [...GEN.natures];
         }
       </fieldset>
 
-      <app-sp-goals [member]="member()" (apply)="patch({ sps: $event })" />
+      <app-sp-goals [member]="member()" (apply)="patch($event)" />
 
       <fieldset class="grid grid-cols-2 gap-1.5">
         <legend class="mb-1 text-xs text-slate-400">{{ i18n.t('edit.moves') }}</legend>
