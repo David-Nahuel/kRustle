@@ -21,6 +21,7 @@ import { I18n } from '../../i18n/i18n.service';
 import type { MessageKey } from '../../i18n/messages';
 import { TONE_CLASSES, type Tone, koSummary, pct, winRateTone } from '../../shared/format';
 import { Sprite } from '../../shared/sprite';
+import { SpeedTiers } from './speed-tiers';
 
 /** Con menos equipos en alguna de las dos ventanas, la tendencia es ruido y no se enseña. */
 const MIN_TREND_TEAMS = 300;
@@ -37,7 +38,7 @@ const TOP_CUT_PRIOR_ENTRIES = 20;
 /** Amenazas que se analizan: los más usados del formato que no llevo. */
 const THREATS = 20;
 
-type Tab = 'species' | 'cores' | 'teams' | 'team';
+type Tab = 'species' | 'cores' | 'teams' | 'team' | 'speed';
 type TeamSort = 'usage' | 'winRate' | 'topCuts';
 
 interface ArchetypeView extends Archetype {
@@ -62,7 +63,7 @@ interface Row {
  */
 @Component({
   selector: 'app-meta-page',
-  imports: [RouterLink, Sprite],
+  imports: [RouterLink, SpeedTiers, Sprite],
   templateUrl: './meta-page.html',
 })
 export class MetaPage {
@@ -92,6 +93,7 @@ export class MetaPage {
     { value: 'cores', label: 'meta.tabCores' },
     { value: 'teams', label: 'meta.tabTeams' },
     { value: 'team', label: 'meta.tabYourTeam' },
+    { value: 'speed', label: 'meta.tabSpeed' },
   ];
   protected readonly tab = signal<Tab>('species');
   protected readonly query = signal('');

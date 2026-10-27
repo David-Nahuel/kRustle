@@ -1,5 +1,5 @@
 import type { DamageOdds } from './damage';
-import { type MoveRow, matchupAgainst, rivalProfile } from './matchup';
+import { type MoveRow, matchupAgainst, typicalProfile } from './matchup';
 import type { Metagame } from './metagame';
 import type { TeamMember } from './pokepaste';
 
@@ -68,7 +68,7 @@ export function analyzeThreat(
   species: string,
 ): Threat {
   // Sin compañeros conocidos: el set más probable de la especie en general.
-  const profile = rivalProfile(metagame, species, [species]);
+  const profile = typicalProfile(metagame, species);
   const duels: ThreatDuel[] = team.map((me, member) => {
     const m = matchupAgainst(me, profile, { field: { trickRoom: false }, moves: metagame.moves });
     return {
