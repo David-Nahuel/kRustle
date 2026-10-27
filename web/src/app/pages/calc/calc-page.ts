@@ -8,6 +8,7 @@ import { TeamStore } from '../../data/team-store.service';
 import { RivalTeamPicker } from '../../shared/rival-team-picker';
 import { Sprite } from '../../shared/sprite';
 import { BattleStatusPanel } from './battle-status-panel';
+import { ComboCard } from './combo-card';
 import { battleAbility, megaStonesFor } from '../../../engine/champions';
 import { type DamageOdds, maxHp } from '../../../engine/damage';
 import type { MoveRow } from '../../../engine/matchup';
@@ -21,6 +22,7 @@ import { SpeedCard } from './speed-card';
   selector: 'app-calc-page',
   imports: [
     BattleStatusPanel,
+    ComboCard,
     DamageRow,
     FieldBar,
     MoveNotes,

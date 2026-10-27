@@ -27,6 +27,11 @@ Herramientas para Pokémon Champions (VGC):
 - **Modo partida** (dentro de la calculadora): PS, estados y cambios de stat de cada Pokémon, y lo que
   revela el rival (objeto, habilidad, movimientos), que reajusta la inferencia de su set. Se guarda
   en el navegador por si se recarga a mitad de combate.
+- **Golpe doble** (dentro de la calculadora): si tu Pokémon y un compañero debilitan al rival
+  entre los dos en un turno, o si el rival y uno suyo te debilitan a ti. Se combinan las 16
+  tiradas de cada golpe con los repartos posibles del rival y los PS que le quedan al objetivo.
+  Como no se sabe quién golpea antes, se hace la media de los dos órdenes, que importan con
+  Sitrus Berry (se come tras el primer golpe) y Multiscale (solo reduce el primero).
 - **Megaevolución**: quien lleva su piedra empieza con su forma base y se megaevoluciona con un
   botón cuando ocurre en la partida (una por lado). Cambian tipos, stats y habilidad; si la mega
   pone clima (Charizard-Mega-Y → Drought) se activa en el campo, y la del rival revela su piedra.

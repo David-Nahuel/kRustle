@@ -12,6 +12,7 @@ import {
   computeMatchup,
   emptySide,
   freshStatus,
+  matchupAgainst,
 } from '../../engine/matchup';
 import { playerIndex } from '../../engine/players';
 import { MetagameService } from './metagame.service';
@@ -96,6 +97,63 @@ export class CalcState {
       myStatus: this.myStatus(),
       rivalStatus: this.rivalStatus(),
       revealed: this.revealed(),
+      rivalPlayer: this.rivalPlayer(),
+    });
+  });
+
+  /** Compañeros para el golpe doble: uno mío contra el rival y uno suyo contra mi Pokémon. */
+  readonly myPartnerChoice = signal<string | null>(null);
+  readonly rivalPartnerChoice = signal<string | null>(null);
+
+  readonly myPartner = computed(() => {
+    const me = this.me();
+    return this.myTeam().find((m) => m !== me && m.species === this.myPartnerChoice());
+  });
+  readonly rivalPartner = computed(() => {
+    const species = this.rivalPartnerChoice();
+    return species && species !== this.rival() && this.rivals().includes(species)
+      ? species
+      : undefined;
+  });
+
+  /** Mi compañero contra el mismo rival (su set y repartos ya inferidos en `matchup`). */
+  readonly myPartnerMatchup = computed<Matchup | undefined>(() => {
+    const metagame = this.metagame();
+    const m = this.matchup();
+    const partner = this.myPartner();
+    if (!metagame || !m || !partner) return undefined;
+    return matchupAgainst(
+      partner,
+      { inference: m.inference, set: m.rivalSet, spreads: m.spreads },
+      {
+        field: this.field(),
+        mySide: this.mySide(),
+        theirSide: this.theirSide(),
+        myStatus: this.myStatusOf(partner.species),
+        theirStatus: this.rivalStatus(),
+        moves: metagame.moves,
+      },
+    );
+  });
+
+  /** Mi Pokémon contra el compañero del rival, con el set que se le supone a este. */
+  readonly rivalPartnerMatchup = computed<Matchup | undefined>(() => {
+    const metagame = this.metagame();
+    const me = this.me();
+    const partner = this.rivalPartner();
+    if (!metagame || !me || !partner) return undefined;
+    return computeMatchup({
+      metagame,
+      me,
+      rival: partner,
+      rivalTeam: this.rivals(),
+      candidate: this.candidateChoice()[partner] ?? 0,
+      field: this.field(),
+      mySide: this.mySide(),
+      theirSide: this.theirSide(),
+      myStatus: this.myStatus(),
+      rivalStatus: this.rivalStatusOf(partner),
+      revealed: this.revealedOf(partner),
       rivalPlayer: this.rivalPlayer(),
     });
   });

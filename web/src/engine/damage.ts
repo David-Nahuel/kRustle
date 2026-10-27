@@ -1,4 +1,4 @@
-import { Field, Move, Pokemon, calculate } from '@smogon/calc';
+import { Field, Move, Pokemon, type Result, calculate } from '@smogon/calc';
 
 import { GEN, type Stats, battleForme, getItem, getMove, getSpecies } from './champions';
 import type { WeightedSpread } from './spreads';
@@ -67,17 +67,57 @@ export function calcDamage(
   moveName: string,
   field: FieldState = {},
 ): DamageResult | null {
+  const result = runCalc(attacker, defender, moveName, field);
+  if (!result) return null;
+  const [min, max] = result.range();
+  if (max === 0) return null;
+  const def = result.defender;
+  const maxHP = def.maxHP();
+  const ko = result.kochance(false);
+  const koHits = ko.n ?? 0;
+  return {
+    move: result.move.name,
+    min,
+    max,
+    minPercent: round1((min / maxHP) * 100),
+    maxPercent: round1((max / maxHP) * 100),
+    koText: ko.text,
+    ko: { hits: koHits, chance: koHits ? (ko.chance ?? 1) : 0 },
+    hitsToKo: Math.ceil(def.curHP() / Math.max(min, 1)),
+    description: result.desc(),
+  };
+}
+
+/**
+ * Las 16 tiradas de daño de cada golpe (varias listas en los de varios golpes: Dragon Darts,
+ * Scale Shot...), en PS. `null` si el movimiento no hace daño.
+ */
+export function damageRolls(
+  attacker: Combatant,
+  defender: Combatant,
+  moveName: string,
+  field: FieldState = {},
+): number[][] | null {
+  const result = runCalc(attacker, defender, moveName, field);
+  if (!result || result.range()[1] === 0) return null;
+  const { damage } = result;
+  if (typeof damage === 'number') return [[damage]];
+  return Array.isArray(damage[0]) ? (damage as number[][]) : [damage as number[]];
+}
+
+function runCalc(
+  attacker: Combatant,
+  defender: Combatant,
+  moveName: string,
+  field: FieldState,
+): Result | null {
   const moveData = getMove(moveName);
   if (!moveData || moveData.category === 'Status') return null;
-
-  const atk = toCalcPokemon(attacker);
-  const def = toCalcPokemon(defender);
-  const move = new Move(GEN, moveData.name, { isCrit: field.criticalHit });
-  const result = calculate(
+  return calculate(
     GEN,
-    atk,
-    def,
-    move,
+    toCalcPokemon(attacker),
+    toCalcPokemon(defender),
+    new Move(GEN, moveData.name, { isCrit: field.criticalHit }),
     new Field({
       gameType: 'Doubles',
       weather: field.weather,
@@ -91,23 +131,6 @@ export function calcDamage(
       },
     }),
   );
-
-  const [min, max] = result.range();
-  if (max === 0) return null;
-  const maxHP = def.maxHP();
-  const ko = result.kochance(false);
-  const koHits = ko.n ?? 0;
-  return {
-    move: moveData.name,
-    min,
-    max,
-    minPercent: round1((min / maxHP) * 100),
-    maxPercent: round1((max / maxHP) * 100),
-    koText: ko.text,
-    ko: { hits: koHits, chance: koHits ? (ko.chance ?? 1) : 0 },
-    hitsToKo: Math.ceil(def.curHP() / Math.max(min, 1)),
-    description: result.desc(),
-  };
 }
 
 /**
@@ -163,7 +186,7 @@ export function damageOverSpreads(
 }
 
 /** Cuantil ponderado: el menor valor cuya probabilidad acumulada alcanza `q`. */
-function quantile(values: [number, number][], q: number): number {
+export function quantile(values: [number, number][], q: number): number {
   const sorted = [...values].sort((a, b) => a[0] - b[0]);
   const total = sorted.reduce((sum, [, w]) => sum + w, 0);
   let acc = 0;
