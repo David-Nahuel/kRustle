@@ -212,6 +212,24 @@ test('Meta enseña el uso, la ficha de cada Pokémon y los núcleos', async ({ p
   expect(errors).toEqual([]);
 });
 
+test('La tabla de velocidades ordena el meta y Trick Room le da la vuelta', async ({
+  page,
+  request,
+}) => {
+  const { errors } = await setUp(page, request);
+  await page.goto('/meta');
+  await page.getByRole('tab', { name: 'Speed' }).click();
+  const rows = page.locator('app-speed-tiers li');
+  await expect(rows.first()).toBeVisible({ timeout: 30_000 });
+  const speeds = async () =>
+    (await rows.locator('span.font-mono').allTextContents()).map((t) => Number(t.trim()));
+  const fastest = await speeds();
+  expect(fastest).toEqual([...fastest].sort((a, b) => b - a));
+  await page.getByRole('button', { name: 'Trick Room' }).click();
+  await expect.poll(async () => (await speeds())[0]).toBe(Math.min(...fastest));
+  expect(errors).toEqual([]);
+});
+
 test('Las amenazas del meta para tu equipo se calculan y abren en la calculadora', async ({
   page,
   request,

@@ -40,6 +40,11 @@ Herramientas para Pokémon Champions (VGC):
   objetivo: si queda un solo rival o, con los que golpean también al compañero (Earthquake), si no
   queda nadie más en el campo. "Golpes críticos" calcula todos los ataques de los dos lados como
   crítico (×1,5, sin pantallas).
+- **Velocidades** (en Meta): tus Pokémon entre los 30 más usados, de más rápido a más lento, con
+  tu Tailwind, el suyo o Trick Room. De cada rival, su set más común (se marca si suele llevar
+  Choice Scarf), la velocidad con su reparto más probable del ladder y el rango del 90% de ellos;
+  de los tuyos, ante cuántos te mueves antes, después o depende del reparto. Desde cada rival se
+  abre la calculadora con el mismo Tailwind y Trick Room.
 - **Modo partida** (dentro de la calculadora): PS, estados y cambios de stat de cada Pokémon, y lo que
   revela el rival (objeto, habilidad, movimientos), que reajusta la inferencia de su set. Se guarda
   en el navegador por si se recarga a mitad de combate. "Nueva partida" pasa a la siguiente de la

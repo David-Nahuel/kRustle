@@ -10,7 +10,7 @@ import {
 } from './champions';
 import { type Distribution, atLeast, damageDistribution } from './combined';
 import { type Combatant, type FieldState, damageRolls, maxHp } from './damage';
-import { type RivalProfile, rivalProfile } from './matchup';
+import { type RivalProfile, typicalProfile } from './matchup';
 import type { Metagame } from './metagame';
 import type { TeamMember } from './pokepaste';
 import { speedStat } from './speed';
@@ -328,15 +328,8 @@ function damageCategory(name: string): 'Physical' | 'Special' | undefined {
   return category === 'Physical' || category === 'Special' ? category : undefined;
 }
 
-/** La inferencia es lo caro y no depende de tu Pokémon: se guarda por metagame y rival. */
-const profiles = new WeakMap<Metagame, Map<string, RivalProfile>>();
-
 function profileOf(metagame: Metagame, rival: string): RivalProfile {
-  let cache = profiles.get(metagame);
-  if (!cache) profiles.set(metagame, (cache = new Map()));
-  let profile = cache.get(rival);
-  if (!profile) cache.set(rival, (profile = rivalProfile(metagame, rival, [rival])));
-  return profile;
+  return typicalProfile(metagame, rival);
 }
 
 function memo<T>(compute: (value: number) => T): (value: number) => T {

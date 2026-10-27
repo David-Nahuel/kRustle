@@ -183,6 +183,21 @@ export function rivalProfile(
   return { inference, set, spreads };
 }
 
+/** La inferencia es lo caro y no depende de tu Pokémon: se guarda por metagame y especie. */
+const typicalProfiles = new WeakMap<Metagame, Map<string, RivalProfile>>();
+
+/**
+ * Set y repartos de una especie sin saber con quién va (amenazas del meta, objetivos de SP,
+ * tabla de velocidades): el más probable en general. Se calcula una vez por especie.
+ */
+export function typicalProfile(metagame: Metagame, species: string): RivalProfile {
+  let cache = typicalProfiles.get(metagame);
+  if (!cache) typicalProfiles.set(metagame, (cache = new Map()));
+  let profile = cache.get(species);
+  if (!profile) cache.set(species, (profile = rivalProfile(metagame, species, [species])));
+  return profile;
+}
+
 export interface MatchupContext {
   field: FieldConditions;
   mySide?: SideConditions;
