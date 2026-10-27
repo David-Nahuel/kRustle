@@ -1,5 +1,7 @@
 import { type APIRequestContext, type Page, expect, test } from '@playwright/test';
 
+import { encodeTeam } from '../src/engine/share';
+
 // Pruebas de humo: con los datos reales del formato, cada página arranca y pinta lo principal sin
 // errores. No comprueban los cálculos (de eso se encargan los tests del motor), sino que la
 // interfaz y los datos del día encajan antes de publicar.
@@ -63,6 +65,43 @@ test('Mi equipo enseña los 6 Pokémon guardados', async ({ page, request }) => 
   }
   // El aviso de herramienta de fans, no oficial, en el pie de todas las páginas.
   await expect(page.getByText(/non-profit fan tool, not affiliated/)).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('Un equipo compartido por enlace se abre y se guarda en otro navegador', async ({
+  page,
+  request,
+}) => {
+  const { current } = await (await request.get('/data/index.json')).json();
+  const usage: Usage[] = await (await request.get(`/data/${current}/usage.json`)).json();
+  const paste = usage.slice(0, 2).map(pasteOf).join('\n\n');
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(`/equipo#${await encodeTeam({ name: 'Shared', paste })}`);
+  const notice = page.getByRole('status').filter({ hasText: 'Shared team: Shared' });
+  await expect(notice).toBeVisible({ timeout: 30_000 });
+  await notice.getByRole('button', { name: 'Save team' }).click();
+  await expect(notice).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Shared', exact: true })).toBeVisible();
+  // Guardado: sale de la URL, así que recargar no lo vuelve a ofrecer.
+  await expect(page).toHaveURL(/\/equipo$/);
+  expect(errors).toEqual([]);
+});
+
+test('Compartir copia un enlace que reconoce el equipo ya guardado', async ({
+  page,
+  context,
+  request,
+}) => {
+  const { errors } = await setUp(page, request);
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/equipo');
+  await page.getByRole('button', { name: 'Share link' }).click();
+  await expect(page.getByRole('button', { name: 'Link copied' })).toBeVisible();
+  const link = await page.evaluate(() => navigator.clipboard.readText());
+  expect(link).toMatch(/\/equipo#t1\.[A-Za-z0-9_-]+$/);
+  await page.goto(link);
+  await expect(page.getByText('You already had this team saved as "Smoke".')).toBeVisible();
   expect(errors).toEqual([]);
 });
 
