@@ -19,15 +19,20 @@ import { MetagameService } from './metagame.service';
 import { persistedSignal } from './storage';
 import { TeamStore } from './team-store.service';
 
-/** Lo que pasa en la partida en curso, por especie. */
+/** Lo que pasa en la serie (Bo3) contra el rival actual, por especie. */
 interface BattleRecord {
   mine: Record<string, BattleStatus>;
   rivals: Record<string, BattleStatus>;
+  /** Lo que ha enseñado el rival en esta partida o en las anteriores de la serie. */
   revealed: Record<string, Revealed>;
+  /** Lo que ya se sabía al empezar esta partida (de las anteriores). */
+  earlier?: Record<string, Revealed>;
+  /** Partida de la serie: 1, 2, 3... (sin definir en lo guardado por versiones anteriores). */
+  game?: number;
 }
 
 function emptyBattle(): BattleRecord {
-  return { mine: {}, rivals: {}, revealed: {} };
+  return { mine: {}, rivals: {}, revealed: {}, earlier: {}, game: 1 };
 }
 
 function megaOf(statuses: Record<string, BattleStatus>): string | undefined {
@@ -79,6 +84,12 @@ export class CalcState {
   readonly myStatus = computed(() => this.myStatusOf(this.me()?.species));
   readonly rivalStatus = computed(() => this.rivalStatusOf(this.rival()));
   readonly revealed = computed(() => this.revealedOf(this.rival()));
+  /** Lo que el rival elegido ya había enseñado en partidas anteriores de la serie. */
+  readonly earlier = computed(() => {
+    const rival = this.rival();
+    return (rival && this.battle().earlier?.[rival]) || {};
+  });
+  readonly game = computed(() => this.battle().game ?? 1);
 
   readonly matchup = computed<Matchup | undefined>(() => {
     const metagame = this.metagame();
@@ -211,18 +222,34 @@ export class CalcState {
     this.rivalTeam.set(Array(6).fill(null));
     this.rivalIndex.set(0);
     this.rivalPlayerId.set(null);
-    this.newGame();
+    this.newSeries();
   }
 
   /** Carga un equipo conocido del rival (p. ej. el que llevó en su último torneo). */
   useRivalTeam(species: readonly string[]): void {
     this.rivalTeam.set([...species, ...Array(6).fill(null)].slice(0, 6));
     this.rivalIndex.set(0);
-    this.newGame();
+    this.newSeries();
   }
 
-  /** Otra partida contra el mismo rival (p. ej. la siguiente de un Bo3): se conservan los equipos. */
+  /**
+   * La siguiente partida contra el mismo rival (la 2 o la 3 de un Bo3): vuelven los PS, los
+   * estados, las megas y el campo, pero lo que ha enseñado se queda, porque en una serie los sets
+   * no cambian. Lo que ya se sabía queda marcado como visto en una partida anterior.
+   */
   newGame(): void {
+    this.battle.update((b) => ({
+      ...emptyBattle(),
+      revealed: b.revealed,
+      earlier: b.revealed,
+      game: (b.game ?? 1) + 1,
+    }));
+    this.candidateChoice.set({});
+    this.resetField();
+  }
+
+  /** Otro rival: se olvida todo, también lo que había enseñado. */
+  private newSeries(): void {
     this.battle.set(emptyBattle());
     this.candidateChoice.set({});
     this.resetField();

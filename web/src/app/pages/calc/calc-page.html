@@ -21,14 +21,19 @@
           <h2 class="text-xs font-semibold tracking-wide text-slate-400 uppercase">
             {{ t('calc.myPokemon') }}
           </h2>
-          <button
-            type="button"
-            class="text-xs text-slate-400 hover:text-amber-300"
-            [title]="t('calc.newGameTitle')"
-            (click)="state.newGame()"
-          >
-            {{ t('calc.newGame') }}
-          </button>
+          <span class="flex items-center gap-2 text-xs">
+            @if (state.game() > 1) {
+              <span class="text-slate-500">{{ t('calc.game', { n: state.game() }) }}</span>
+            }
+            <button
+              type="button"
+              class="text-slate-400 hover:text-amber-300"
+              [title]="t('calc.newGameTitle')"
+              (click)="state.newGame()"
+            >
+              {{ t('calc.newGame') }}
+            </button>
+          </span>
         </div>
         <div
           class="grid grid-cols-6 gap-1.5"
@@ -192,6 +197,7 @@
         [selected]="selectedCandidate()"
         [meta]="data.metagame()?.meta"
         [revealed]="state.revealed()"
+        [earlier]="state.earlier()"
         [mega]="!!state.rivalStatus().mega"
         [playerName]="state.rivalPlayerName()"
         (choose)="state.chooseCandidate(state.rival()!, $event)"

@@ -101,6 +101,7 @@ import { RevealedEditor } from './revealed-editor';
           [inference]="matchup().inference"
           [rivalSet]="matchup().rivalSet"
           [revealed]="revealed()"
+          [earlier]="earlier()"
           (changed)="reveal.emit($event)"
         />
       </div>
@@ -122,6 +123,7 @@ export class RivalSetCard {
   readonly selected = input(0);
   readonly meta = input<Meta>();
   readonly revealed = input<Revealed>({});
+  readonly earlier = input<Revealed>({});
   /** Ya ha megaevolucionado: su habilidad pasa a ser la de la mega. */
   readonly mega = input(false);
   /** Nombre del rival, si se sabe quién es. */
