@@ -1,4 +1,5 @@
-# Formato, lint, tests y build del pipeline y de la web, sin datos ni despliegue.
+# Formato, lint, tests y build del pipeline y de la web; en los pull requests, también las
+# pruebas de humo con los datos de la caché del último despliegue.
 #
 # - En cada pull request.
 # - Desde el workflow de despliegue (deploy.yml), antes de publicar un cambio de código.
@@ -15,7 +16,7 @@ jobs:
   pipeline:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -40,9 +41,9 @@ jobs:
       run:
         working-directory: web
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -60,3 +61,62 @@ jobs:
       # Sin datos: comprueba que compila; el build que se publica lo hace deploy.yml.
       - name: Build
         run: npx ng build
+
+  # Pruebas de humo con datos reales, solo en los pull requests: al desplegar ya las hace
+  # deploy.yml con los datos del día, pero entonces el cambio ya está en main y un fallo frena la
+  # publicación. Los datos salen de la caché que guarda cada despliegue (la de main, que los PR
+  # pueden leer) y se generan sin descargar nada: no depende de Limitless ni de su límite.
+  e2e:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      FORMAT: ${{ vars.KRUSTLE_FORMAT || 'M-C' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Caché de datos del último despliegue
+        id: data
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            pipeline/cache
+            web/public/sprites
+          key: pipeline-${{ github.run_id }}
+          restore-keys: pipeline-
+
+      # GitHub borra la caché tras 7 días sin uso; la ejecución diaria de deploy.yml la mantiene.
+      # Sin ella no se puede probar sin descargar ~1 h de torneos: se avisa y se sigue.
+      - name: Sin caché de datos
+        if: steps.data.outputs.cache-matched-key == ''
+        run: echo "::warning::No hay caché de datos de un despliegue; se saltan las pruebas de humo."
+
+      - if: steps.data.outputs.cache-matched-key != ''
+        uses: dtolnay/rust-toolchain@stable
+
+      - if: steps.data.outputs.cache-matched-key != ''
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: pipeline
+
+      - name: Datos (desde la caché, sin descargar)
+        if: steps.data.outputs.cache-matched-key != ''
+        run: cargo run --release --manifest-path pipeline/Cargo.toml -- build --format "$FORMAT"
+
+      - if: steps.data.outputs.cache-matched-key != ''
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build de la web
+        if: steps.data.outputs.cache-matched-key != ''
+        working-directory: web
+        run: |
+          npm ci
+          npx ng build
+
+      - name: Prueba de humo
+        if: steps.data.outputs.cache-matched-key != ''
+        working-directory: web
+        run: npm run e2e

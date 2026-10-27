@@ -226,7 +226,9 @@ cada push a `main` que toque la web o el pipeline, y a mano desde *Run workflow*
 
 1. Comprobaciones (`.github/workflows/ci.yml`, que también corre en cada pull request): `cargo fmt`,
    clippy y tests del pipeline; Prettier, tests y build de la web. En la ejecución diaria se
-   saltan, porque el código no cambia.
+   saltan, porque el código no cambia. En los pull requests, además, las pruebas de humo con los
+   datos de la caché del último despliegue (sin descargar nada): un cambio que las rompa se ve en el
+   PR y no al publicar. Si GitHub ha borrado esa caché, se avisa y se saltan.
 2. Restaura la caché de Actions (respuestas de Limitless y sprites ya descargados).
 3. `update`: datos del formato, roster, nombres traducidos y sprites.
 4. Build de la web y prueba de humo (`npm run e2e`): con los datos nuevos, cada página arranca y
