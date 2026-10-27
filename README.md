@@ -24,6 +24,11 @@ Herramientas para Pokémon Champions (VGC):
   como rival. Y las amenazas del meta para tu equipo: los 20 Pokémon más usados que no llevas,
   ordenados por lo mal que los cubres (quién los debilita, a cuántos de los tuyos debilitan de un
   golpe, quién es más rápido), con el detalle de cada duelo y un enlace a la calculadora.
+- **Ataques en área y críticos**: los ataques en área (Earthquake, Rock Slide, Heat Wave...) se
+  calculan con la reducción de dobles (×0,75) y enseñan también su daño completo contra un solo
+  objetivo: si queda un solo rival o, con los que golpean también al compañero (Earthquake), si no
+  queda nadie más en el campo. "Golpes críticos" calcula todos los ataques de los dos lados como
+  crítico (×1,5, sin pantallas).
 - **Modo partida** (dentro de la calculadora): PS, estados y cambios de stat de cada Pokémon, y lo que
   revela el rival (objeto, habilidad, movimientos), que reajusta la inferencia de su set. Se guarda
   en el navegador por si se recarga a mitad de combate.

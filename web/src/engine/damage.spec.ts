@@ -142,6 +142,47 @@ describe('calcDamage', () => {
     for (let hp = 0; hp <= max; hp++) expect(currentHp(max, (hp / max) * 100)).toBe(hp);
   });
 
+  it('un ataque en área contra un solo objetivo hace el daño completo', () => {
+    const adamant = { ...garchomp, item: undefined, nature: 'Adamant', sps: sps({ atk: 32 }) };
+    const bulky = { ...incineroar, item: undefined, sps: sps({ hp: 32 }) };
+    for (const move of ['Earthquake', 'Rock Slide']) {
+      const spread = calcDamage(adamant, bulky, move)!;
+      const single = calcDamage(adamant, bulky, move, { singleTarget: true })!;
+      expect(single.max).toBeGreaterThan(spread.max);
+      expect(single.max / spread.max).toBeCloseTo(4 / 3, 1);
+    }
+    expect(calcDamage(adamant, bulky, 'Earthquake')).toMatchObject({ min: 152, max: 182 });
+    expect(calcDamage(adamant, bulky, 'Earthquake', { singleTarget: true })).toMatchObject({
+      min: 206,
+      max: 246,
+    });
+    // Los de un objetivo no cambian.
+    expect(calcDamage(adamant, bulky, 'Dragon Claw', { singleTarget: true })).toEqual(
+      calcDamage(adamant, bulky, 'Dragon Claw'),
+    );
+  });
+
+  it('contra un solo objetivo, las pantallas siguen siendo las de dobles', () => {
+    const screened = calcDamage(garchomp, incineroar, 'Earthquake', {
+      singleTarget: true,
+      reflect: true,
+    })!;
+    const open = calcDamage(garchomp, incineroar, 'Earthquake', { singleTarget: true })!;
+    // En dobles, Reflect quita un tercio (en individuales, la mitad).
+    expect(screened.max / open.max).toBeCloseTo(2 / 3, 1);
+  });
+
+  it('un crítico hace más daño e ignora las pantallas', () => {
+    const normal = calcDamage(garchomp, incineroar, 'Earthquake')!;
+    const crit = calcDamage(garchomp, incineroar, 'Earthquake', { criticalHit: true })!;
+    const critScreened = calcDamage(garchomp, incineroar, 'Earthquake', {
+      criticalHit: true,
+      reflect: true,
+    })!;
+    expect(crit.max / normal.max).toBeCloseTo(1.5, 1);
+    expect(critScreened).toEqual(crit);
+  });
+
   it('devuelve null para movimientos de estado o desconocidos', () => {
     expect(calcDamage(garchomp, incineroar, 'Protect')).toBeNull();
     expect(calcDamage(garchomp, incineroar, 'Movimiento Inventado')).toBeNull();
