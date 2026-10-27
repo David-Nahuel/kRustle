@@ -1,4 +1,55 @@
 <div class="flex flex-col gap-6">
+  @if (receivedNotice(); as notice) {
+    <section
+      class="flex flex-wrap items-start gap-3 rounded-xl border p-3"
+      [class]="
+        notice === 'invalid'
+          ? 'border-rose-500/40 bg-rose-500/10 text-rose-200'
+          : 'border-amber-400/40 bg-amber-400/10 text-amber-100'
+      "
+      role="status"
+    >
+      <div class="min-w-56 flex-1 text-sm">
+        @if (notice === 'invalid') {
+          {{ t('team.sharedInvalid') }}
+        } @else if (notice.id === null) {
+          <strong class="block">{{ t('team.sharedTitle', { name: notice.name }) }}</strong>
+          {{ t('team.sharedText') }}
+        } @else {
+          {{ t('team.sharedKnown', { name: notice.name }) }}
+        }
+      </div>
+      @if (notice !== 'invalid' && notice.id === null) {
+        <!-- En el móvil, los botones bajan debajo del texto en vez de estrecharlo. -->
+        <div class="flex shrink-0 gap-2">
+          <button
+            type="button"
+            class="rounded-lg bg-amber-400 px-3 py-1.5 text-sm font-semibold text-slate-950 hover:bg-amber-300"
+            (click)="save()"
+          >
+            {{ t('team.saveNew') }}
+          </button>
+          <button
+            type="button"
+            class="rounded-lg px-3 py-1.5 text-sm ring-1 ring-amber-400/40 hover:bg-amber-400/10"
+            (click)="dismissReceived()"
+          >
+            {{ t('team.sharedDiscard') }}
+          </button>
+        </div>
+      } @else {
+        <button
+          type="button"
+          class="shrink-0 rounded-lg px-2 py-1 text-lg leading-none opacity-70 hover:opacity-100"
+          [attr.aria-label]="t('team.close')"
+          (click)="dismissReceived()"
+        >
+          ×
+        </button>
+      }
+    </section>
+  }
+
   @if (!store.teams().length) {
     <section
       class="flex flex-col gap-3 rounded-xl border border-slate-700 bg-slate-900 p-4"
@@ -84,10 +135,18 @@
         @if (paste().trim()) {
           <button
             type="button"
-            class="ml-auto h-8 rounded-lg px-2.5 text-xs text-slate-300 ring-1 ring-slate-700 hover:text-slate-100"
+            class="ml-auto h-8 shrink-0 rounded-lg px-2.5 text-xs whitespace-nowrap text-slate-300 ring-1 ring-slate-700 hover:text-slate-100"
             (click)="copy()"
           >
             {{ t(copied() ? 'team.copied' : 'team.copy') }}
+          </button>
+          <button
+            type="button"
+            class="h-8 shrink-0 rounded-lg px-2.5 text-xs whitespace-nowrap text-amber-300 ring-1 ring-amber-400/40 hover:bg-amber-400/10"
+            [title]="t('team.shareTitle')"
+            (click)="share()"
+          >
+            {{ t(linkCopied() ? 'team.linkCopied' : 'team.share') }}
           </button>
         }
       </div>

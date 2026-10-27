@@ -13,6 +13,10 @@ Herramientas para Pokémon Champions (VGC):
   naturaleza, Stat Points y movimientos, con lo que lleva cada especie en torneos primero). Las dos
   vías están sincronizadas: lo que se edita en la interfaz reescribe solo el bloque de ese Pokémon
   en el paste.
+- **Compartir equipo**: un enlace que abre el equipo en otro dispositivo o a otra persona (en el
+  móvil, con el menú de compartir del sistema). El paste va comprimido tras el `#` de la URL, que
+  el navegador no envía al servidor. Al abrirlo se ve el equipo sin guardar; si ya estaba
+  guardado, se elige ese.
 - **Búsqueda por jugador**: si sabes contra quién juegas (usuario de Limitless), ves sus equipos
   anteriores, cargas uno con un toque y la inferencia usa sus propios sets.
 - **Meta**: uso y winrate de cada Pokémon, si sube o baja (última semana frente a las tres
