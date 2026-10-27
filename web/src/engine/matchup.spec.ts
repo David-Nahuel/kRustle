@@ -191,6 +191,33 @@ describe('computeMatchup', () => {
   });
 });
 
+describe('ataques en área y críticos', () => {
+  it('con singleTargetOdds, los ataques en área traen el daño contra un solo objetivo', () => {
+    const m = computeMatchup({ ...input, rival: 'Garchomp', singleTargetOdds: true });
+    const [earthquake, dragonClaw] = m.theirMoves;
+    expect(earthquake.move).toBe('Earthquake');
+    expect(earthquake.singleTarget!.likely.max).toBeGreaterThan(earthquake.odds!.likely.max);
+    expect(dragonClaw.singleTarget).toBeUndefined();
+    // Sin pedirlo (el recomendador), no se calcula.
+    expect(
+      computeMatchup({ ...input, rival: 'Garchomp' }).theirMoves[0].singleTarget,
+    ).toBeUndefined();
+  });
+
+  it('el crítico del campo vale para los dos lados', () => {
+    const base = computeMatchup({ ...input, rival: 'Garchomp' });
+    const crit = computeMatchup({
+      ...input,
+      rival: 'Garchomp',
+      field: { trickRoom: false, criticalHit: true },
+    });
+    expect(crit.myMoves[0].odds!.likely.max).toBeGreaterThan(base.myMoves[0].odds!.likely.max);
+    expect(crit.theirMoves[0].odds!.likely.max).toBeGreaterThan(
+      base.theirMoves[0].odds!.likely.max,
+    );
+  });
+});
+
 describe('comboFromMatchups', () => {
   it('mi Pokémon y un compañero contra el mismo rival', () => {
     const partner: TeamMember = {

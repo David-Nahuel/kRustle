@@ -98,6 +98,7 @@ export class CalcState {
       rivalStatus: this.rivalStatus(),
       revealed: this.revealed(),
       rivalPlayer: this.rivalPlayer(),
+      singleTargetOdds: true,
     });
   });
 

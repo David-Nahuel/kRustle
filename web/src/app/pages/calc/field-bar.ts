@@ -30,7 +30,7 @@ const EXTRA_TOGGLES: {
 
 /**
  * El campo en una línea, encima del enfrentamiento: clima, terreno, Trick Room y el Tailwind de
- * cada lado, que son lo que más cambia en una partida. Pantallas, Helping Hand y Friend Guard,
+ * cada lado, que son lo que más cambia en una partida, y los críticos. Pantallas, Helping Hand y Friend Guard,
  * en "Más".
  */
 @Component({
@@ -88,6 +88,15 @@ const EXTRA_TOGGLES: {
         (click)="toggle(theirSide, 'tailwind')"
       >
         {{ i18n.t('view.theirTailwind', { move: i18n.move('Tailwind') }) }}
+      </button>
+      <button
+        type="button"
+        [class]="chip(!!field().criticalHit, 'amber')"
+        [attr.aria-pressed]="!!field().criticalHit"
+        [title]="i18n.t('field.critTitle')"
+        (click)="field.set({ ...field(), criticalHit: !field().criticalHit })"
+      >
+        {{ i18n.t('field.crit') }}
       </button>
       <button
         type="button"
@@ -163,7 +172,7 @@ export class FieldBar {
   protected readonly active = computed(() => {
     const f = this.field();
     return (
-      !!(f.weather || f.terrain || f.trickRoom) ||
+      !!(f.weather || f.terrain || f.trickRoom || f.criticalHit) ||
       Object.values(this.mySide()).some(Boolean) ||
       Object.values(this.theirSide()).some(Boolean)
     );

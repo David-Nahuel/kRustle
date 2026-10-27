@@ -55,6 +55,9 @@ import { TONE_CLASSES, TYPE_CLASSES, koSummary } from '../../shared/format';
           {{ i18n.t('damage.range', { from: odds().percentRange[0], to: odds().percentRange[1] }) }}
         </p>
       }
+      @if (singleText(); as text) {
+        <p class="text-right text-xs text-slate-300">{{ text }}</p>
+      }
     </div>
   `,
 })
@@ -64,6 +67,9 @@ export class DamageRow {
   /** `true` si golpeo yo (KO = bueno), `false` si golpea el rival. */
   readonly attacking = input.required<boolean>();
   readonly priority = input<Priority>();
+  /** En los ataques en área, el daño contra un solo objetivo, y a quién golpea el movimiento. */
+  readonly singleTarget = input<DamageOdds>();
+  readonly target = input<string>();
 
   protected readonly i18n = inject(I18n);
   protected readonly priorityText = computed(() => this.i18n.priority(this.priority()));
@@ -75,6 +81,22 @@ export class DamageRow {
   protected readonly barClass = computed(() =>
     this.attacking() ? 'bg-emerald-400' : 'bg-rose-400',
   );
+
+  /**
+   * Los ataques en área hacen el daño completo si golpean a uno solo: los que van a los dos
+   * rivales, si solo queda uno; Earthquake (que golpea también al compañero), si no queda nadie
+   * más en el campo.
+   */
+  protected readonly singleText = computed(() => {
+    const single = this.singleTarget();
+    if (!single) return undefined;
+    const key = this.target() === 'allAdjacent' ? 'damage.singleField' : 'damage.singleFoe';
+    return this.i18n.t(key, {
+      from: single.likely.minPercent,
+      to: single.likely.maxPercent,
+      ko: koSummary(single, this.attacking(), this.i18n.t).label,
+    });
+  });
 
   protected readonly hasRange = computed(() => {
     const { likely, percentRange } = this.odds();

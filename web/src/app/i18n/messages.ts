@@ -222,6 +222,8 @@ const en = {
   'field.terrain': 'Terrain',
   'field.mySide': 'Your side',
   'field.theirSide': 'Their side',
+  'field.crit': 'Critical hits',
+  'field.critTitle': 'Every attack, yours and theirs, as a critical hit (ignores screens)',
 
   'panel.state': 'Status of {name}',
   'panel.hpLabel': 'HP left for {name} (%)',
@@ -256,6 +258,8 @@ const en = {
   'ko.nhko': '{n}HKO',
   'ko.many': '4+ hits',
   'damage.range': 'across their spreads: {from}–{to}%',
+  'damage.singleFoe': 'if only one opponent is left: {from}–{to}% · {ko}',
+  'damage.singleField': 'if nobody else is on the field: {from}–{to}% · {ko}',
 
   'combo.title': 'Together with',
   'combo.partnerAria': 'Partner that attacks the same target',
@@ -605,6 +609,8 @@ const es: Record<MessageKey, string> = {
   'field.terrain': 'Terreno',
   'field.mySide': 'Tu lado',
   'field.theirSide': 'Su lado',
+  'field.crit': 'Golpes críticos',
+  'field.critTitle': 'Todos los ataques, tuyos y suyos, como golpe crítico (ignoran las pantallas)',
 
   'panel.state': 'Estado de {name}',
   'panel.hpLabel': 'PS restantes de {name} (%)',
@@ -639,6 +645,8 @@ const es: Record<MessageKey, string> = {
   'ko.nhko': '{n}HKO',
   'ko.many': '4+ golpes',
   'damage.range': 'según su reparto: {from}–{to}%',
+  'damage.singleFoe': 'si queda un solo rival: {from}–{to}% · {ko}',
+  'damage.singleField': 'si no queda nadie más en el campo: {from}–{to}% · {ko}',
 
   'combo.title': 'Junto a',
   'combo.partnerAria': 'Compañero que ataca al mismo objetivo',

@@ -32,6 +32,12 @@ export interface FieldState {
   auroraVeil?: boolean;
   friendGuard?: boolean;
   criticalHit?: boolean;
+  /**
+   * El ataque en área golpea a un solo objetivo (solo queda un rival, o nadie más en el campo
+   * con Earthquake): hace el daño completo, sin la reducción de dobles. Las pantallas siguen
+   * siendo las de dobles.
+   */
+  singleTarget?: boolean;
 }
 
 export interface DamageResult {
@@ -117,7 +123,10 @@ function runCalc(
     GEN,
     toCalcPokemon(attacker),
     toCalcPokemon(defender),
-    new Move(GEN, moveData.name, { isCrit: field.criticalHit }),
+    new Move(GEN, moveData.name, {
+      isCrit: field.criticalHit,
+      overrides: field.singleTarget ? { target: 'normal' } : undefined,
+    }),
     new Field({
       gameType: 'Doubles',
       weather: field.weather,

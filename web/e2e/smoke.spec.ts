@@ -87,6 +87,19 @@ test('La calculadora pinta el daño en los dos sentidos', async ({ page, request
   expect(errors).toEqual([]);
 });
 
+test('Los golpes críticos cambian el daño de la calculadora', async ({ page, request }) => {
+  const { errors } = await setUp(page, request);
+  await page.goto('/calculadora');
+  const firstDamage = page.locator('section[aria-labelledby=my-attacks] .font-mono').first();
+  await expect(firstDamage).toBeVisible({ timeout: 30_000 });
+  const before = await firstDamage.textContent();
+  const crit = page.getByRole('button', { name: 'Critical hits' });
+  await crit.click();
+  await expect(crit).toHaveAttribute('aria-pressed', 'true');
+  await expect(firstDamage).not.toHaveText(before!);
+  expect(errors).toEqual([]);
+});
+
 test('La calculadora suma el daño de dos Pokémon contra el mismo objetivo', async ({
   page,
   request,

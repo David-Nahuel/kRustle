@@ -46,7 +46,12 @@ export interface FieldConditions {
   weather?: FieldState['weather'];
   terrain?: FieldState['terrain'];
   trickRoom: boolean;
+  /** Todos los ataques, de los dos lados, como golpe crítico. */
+  criticalHit?: boolean;
 }
+
+/** Ataques en área: en dobles hacen el 75% si golpean a más de un objetivo. */
+const SPREAD_TARGETS = new Set(['allAdjacentFoes', 'allAdjacent']);
 
 /** Habilidades que ponen clima o terreno al entrar (o al megaevolucionar). */
 export const WEATHER_SETTERS: Record<string, FieldConditions['weather']> = {
@@ -82,6 +87,8 @@ export interface MoveRow {
   blocked?: BlockReason;
   /** Solo en movimientos de daño que afectan. */
   odds?: DamageOdds;
+  /** En los ataques en área, el daño si golpea a un solo objetivo (ver `singleTargetOdds`). */
+  singleTarget?: DamageOdds;
 }
 
 /** Lo que suponemos del rival: su set y sus repartos de SP posibles. */
@@ -126,6 +133,8 @@ export interface MatchupInput {
   rivalStatus?: BattleStatus;
   /** Lo que el rival ha enseñado en la partida (objeto, habilidad, movimientos). */
   revealed?: Revealed;
+  /** Calcula también el daño de los ataques en área contra un solo objetivo. */
+  singleTargetOdds?: boolean;
   /** Índice del jugador rival en `metagame.players`, si se sabe quién es. */
   rivalPlayer?: number;
 }
@@ -143,6 +152,7 @@ export function computeMatchup(input: MatchupInput): Matchup {
     myStatus: input.myStatus,
     theirStatus: input.rivalStatus,
     moves: input.metagame.moves,
+    singleTargetOdds: input.singleTargetOdds,
   });
 }
 
@@ -181,6 +191,11 @@ export interface MatchupContext {
   theirStatus?: BattleStatus;
   /** Prioridad, objetivo y flags de los movimientos (del roster). */
   moves?: MoveCatalog;
+  /**
+   * Calcula también el daño de los ataques en área contra un solo objetivo. Cuesta un cálculo
+   * más por cada uno, así que solo lo pide la calculadora (no el recomendador).
+   */
+  singleTargetOdds?: boolean;
 }
 
 export function matchupAgainst(
@@ -193,6 +208,7 @@ export function matchupAgainst(
     myStatus = freshStatus(),
     theirStatus = freshStatus(),
     moves,
+    singleTargetOdds,
   }: MatchupContext,
 ): Matchup {
   const inBattle = (s: BattleStatus) => ({
@@ -234,9 +250,15 @@ export function matchupAgainst(
       if (blocked || info.category === 'Status') return { move, info, priority, blocked };
       const odds = damageOverSpreads(user, target, move, unknown, spreads.spreads, attackField);
       // Si la calculadora no le hace daño por algo que no detectamos, al menos no se oculta.
-      return odds
-        ? { move, info, priority, odds }
-        : { move, info, priority, blocked: { code: 'noDamage' } };
+      if (!odds) return { move, info, priority, blocked: { code: 'noDamage' } };
+      if (!singleTargetOdds || !SPREAD_TARGETS.has(info.target)) {
+        return { move, info, priority, odds };
+      }
+      const singleTarget = damageOverSpreads(user, target, move, unknown, spreads.spreads, {
+        ...attackField,
+        singleTarget: true,
+      });
+      return { move, info, priority, odds, singleTarget: singleTarget ?? undefined };
     });
 
   const myField = fieldFor(field, mySide, theirSide);
@@ -279,5 +301,6 @@ function fieldFor(
     lightScreen: defender.lightScreen,
     auroraVeil: defender.auroraVeil,
     friendGuard: defender.friendGuard,
+    criticalHit: field.criticalHit,
   };
 }

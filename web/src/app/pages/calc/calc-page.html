@@ -152,6 +152,8 @@
               [move]="row.move"
               [odds]="row.odds"
               [priority]="row.priority"
+              [singleTarget]="row.singleTarget"
+              [target]="row.info?.target"
               [attacking]="true"
             />
           } @empty {
@@ -173,6 +175,8 @@
               [move]="row.move"
               [odds]="row.odds"
               [priority]="row.priority"
+              [singleTarget]="row.singleTarget"
+              [target]="row.info?.target"
               [attacking]="false"
             />
           } @empty {
