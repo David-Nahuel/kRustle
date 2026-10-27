@@ -107,6 +107,9 @@ export interface Matchup {
    */
   mine: Combatant;
   theirs: Combatant;
+  /** Campo visto desde quien ataca: el mío al golpear yo y el suyo al golpear el rival. */
+  myField: FieldState;
+  theirField: FieldState;
 }
 
 export interface MatchupInput {
@@ -236,15 +239,19 @@ export function matchupAgainst(
         : { move, info, priority, blocked: { code: 'noDamage' } };
     });
 
+  const myField = fieldFor(field, mySide, theirSide);
+  const theirField = fieldFor(field, theirSide, mySide);
   return {
     inference,
     rivalSet,
     spreads,
     speed,
-    myMoves: rows(me.moves, mine, theirs, fieldFor(field, mySide, theirSide), 'defender'),
-    theirMoves: rows(rivalSet.moves, theirs, mine, fieldFor(field, theirSide, mySide), 'attacker'),
+    myMoves: rows(me.moves, mine, theirs, myField, 'defender'),
+    theirMoves: rows(rivalSet.moves, theirs, mine, theirField, 'attacker'),
     mine,
     theirs,
+    myField,
+    theirField,
   };
 }
 

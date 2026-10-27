@@ -1,3 +1,4 @@
+import type { ComboOdds } from '../../engine/combined';
 import type { DamageOdds } from '../../engine/damage';
 import type { I18n } from '../i18n/i18n.service';
 
@@ -29,6 +30,19 @@ export function koSummary(
     return { label: t('ko.2hkoChance', { pct: pct(odds.twoHkoChance) }), tone: 'neutral' };
   const hits = odds.likely.ko.hits;
   return { label: hits ? t('ko.nhko', { n: hits }) : t('ko.many'), tone: 'neutral' };
+}
+
+/** Lo mismo para el golpe doble: si lo debilitan entre los dos este turno. */
+export function comboSummary(
+  odds: ComboOdds,
+  attacking: boolean,
+  t: I18n['t'],
+): { label: string; tone: Tone } {
+  if (odds.koChance >= 0.995) return { label: t('combo.ko'), tone: attacking ? 'good' : 'bad' };
+  if (odds.koChance >= 0.05) {
+    return { label: t('combo.koChance', { pct: pct(odds.koChance) }), tone: 'warn' };
+  }
+  return { label: t('combo.noKo'), tone: 'neutral' };
 }
 
 /**

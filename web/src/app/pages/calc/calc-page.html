@@ -158,6 +158,7 @@
             <p class="py-2 text-sm text-slate-400">{{ t('calc.noDamageMine') }}</p>
           }
           <app-move-notes [rows]="others(m.myMoves)" />
+          <app-combo-card side="mine" />
         </section>
 
         <section
@@ -178,6 +179,7 @@
             <p class="py-2 text-sm text-slate-400">{{ t('calc.noDamageTheirs') }}</p>
           }
           <app-move-notes [rows]="others(m.theirMoves)" />
+          <app-combo-card side="theirs" />
         </section>
       </div>
 

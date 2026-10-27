@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { emptyStats } from './champions';
 import { type Meta, type TeamsFile, buildMetagame } from './metagame';
 import type { TeamMember } from './pokepaste';
+import { comboFromMatchups } from './combined';
 import { computeMatchup, emptySide, freshStatus } from './matchup';
 
 const META: Meta = {
@@ -187,5 +188,39 @@ describe('computeMatchup', () => {
       myStatus: { ...freshStatus(), itemConsumed: true },
     });
     expect(unburden.speed.mySpeed).toBe(base.speed.mySpeed * 2);
+  });
+});
+
+describe('comboFromMatchups', () => {
+  it('mi Pokémon y un compañero contra el mismo rival', () => {
+    const partner: TeamMember = {
+      species: 'Garchomp',
+      item: 'Life Orb',
+      ability: 'Rough Skin',
+      nature: 'Jolly',
+      sps: { ...emptyStats(), hp: 2, atk: 32, spe: 32 },
+      moves: ['Earthquake'],
+    };
+    const main = computeMatchup({ ...input, rival: 'Garchomp' });
+    const helper = computeMatchup({ ...input, me: partner, rival: 'Garchomp' });
+    const combo = comboFromMatchups('mine', main, helper, ['Wood Hammer', 'Earthquake'])!;
+    const alone = main.myMoves[0].odds!.likely;
+    const helped = helper.myMoves[0].odds!.likely;
+    expect(combo.likely.minPercent).toBeCloseTo(alone.minPercent + helped.minPercent, 0);
+    expect(combo.koChance).toBeGreaterThan(0);
+  });
+
+  it('el rival y un compañero suyo contra mí, con las pantallas de mi lado', () => {
+    const combo = (mySide = emptySide()) =>
+      comboFromMatchups(
+        'theirs',
+        computeMatchup({ ...input, mySide, rival: 'Garchomp' }),
+        computeMatchup({ ...input, mySide, rival: 'Incineroar' }),
+        ['Earthquake', 'Flare Blitz'],
+      )!;
+    const open = combo();
+    const screened = combo({ ...emptySide(), reflect: true });
+    expect(screened.likely.maxPercent).toBeLessThan(open.likely.maxPercent);
+    expect(screened.koChance).toBeLessThanOrEqual(open.koChance);
   });
 });

@@ -87,6 +87,21 @@ test('La calculadora pinta el daño en los dos sentidos', async ({ page, request
   expect(errors).toEqual([]);
 });
 
+test('La calculadora suma el daño de dos Pokémon contra el mismo objetivo', async ({
+  page,
+  request,
+}) => {
+  const { mine, errors } = await setUp(page, request);
+  await page.goto('/calculadora');
+  const partners = page.getByRole('radiogroup', { name: 'Partner that attacks the same target' });
+  await expect(partners.first()).toBeVisible({ timeout: 30_000 });
+  // El primero de tu equipo es el elegido: el compañero, el segundo. Y del rival, otro suyo.
+  await partners.first().getByRole('radio', { name: mine[1] }).click();
+  await partners.last().getByRole('radio').first().click();
+  await expect(page.getByText(/KO between both/)).toHaveCount(2);
+  expect(errors).toEqual([]);
+});
+
 test('Meta enseña el uso, la ficha de cada Pokémon y los núcleos', async ({ page, request }) => {
   const { errors } = await setUp(page, request);
   await page.goto('/meta');

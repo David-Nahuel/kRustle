@@ -257,6 +257,18 @@ const en = {
   'ko.many': '4+ hits',
   'damage.range': 'across their spreads: {from}–{to}%',
 
+  'combo.title': 'Together with',
+  'combo.partnerAria': 'Partner that attacks the same target',
+  'combo.hintMine': 'Pick a partner to see if you knock it out between the two of you this turn.',
+  'combo.hintTheirs': 'Pick one of their partners to see if they knock you out between them.',
+  'combo.moveAria': 'Move of {name}',
+  'combo.noMoves': '{name} has no damaging move that affects the target.',
+  'combo.ko': 'KO between both',
+  'combo.koChance': 'KO between both {pct}',
+  'combo.noKo': 'No KO between both',
+  'combo.note':
+    'One hit from each this turn. It averages both orders, which matter for {item} and {ability}.',
+
   'block.blockedByAbility': 'Blocked by {ability}',
   'block.psychicTerrain': 'Blocked by Psychic Terrain',
   'block.pranksterDark': "{ability} doesn't affect {type} types",
@@ -624,6 +636,18 @@ const es: Record<MessageKey, string> = {
   'ko.nhko': '{n}HKO',
   'ko.many': '4+ golpes',
   'damage.range': 'según su reparto: {from}–{to}%',
+
+  'combo.title': 'Junto a',
+  'combo.partnerAria': 'Compañero que ataca al mismo objetivo',
+  'combo.hintMine': 'Elige un compañero para ver si lo debilitáis entre los dos este turno.',
+  'combo.hintTheirs': 'Elige un compañero suyo para ver si te debilitan entre los dos.',
+  'combo.moveAria': 'Movimiento de {name}',
+  'combo.noMoves': '{name} no tiene ningún movimiento de daño que le afecte.',
+  'combo.ko': 'KO entre los dos',
+  'combo.koChance': 'KO entre los dos {pct}',
+  'combo.noKo': 'Sin KO entre los dos',
+  'combo.note':
+    'Un golpe de cada uno este turno. Hace la media de los dos órdenes, que importan con {item} y {ability}.',
 
   'block.blockedByAbility': 'Bloqueado por {ability}',
   'block.psychicTerrain': 'Bloqueado por Campo Psíquico',
