@@ -4,7 +4,7 @@ import { type Stats, emptyStats } from './champions';
 import { type Meta, type TeamsFile, buildMetagame } from './metagame';
 import type { TeamMember } from './pokepaste';
 
-import { type Goal, checkGoals, goalMoves, planSps } from './benchmarks';
+import { type Goal, checkGoals, goalMoves, natureOptions, planSps } from './benchmarks';
 
 const META: Meta = {
   format: 'M-C',
@@ -175,5 +175,51 @@ describe('goalMoves', () => {
     expect(goalMoves(metagame, me, 'survive', 'Garchomp')).toEqual(['Dragon Claw', 'Earthquake']);
     // Sin Protect, que es de estado.
     expect(goalMoves(metagame, me, 'ko', 'Garchomp')).toEqual(['Wood Hammer', 'Fake Out']);
+  });
+});
+
+describe('natureOptions', () => {
+  const outspeed: Goal = { kind: 'outspeed', rival: 'Incineroar' };
+
+  it('sugiere naturalezas que suben el stat del objetivo, de la que más ahorra a la que menos', () => {
+    const current = planSps(metagame, free, [outspeed]);
+    if (!current.ok) throw new Error(current.reason);
+    const options = natureOptions(metagame, free, [outspeed]);
+    expect(options.length).toBeGreaterThan(0);
+    for (const option of options) {
+      expect(option.plan.needed).toBeLessThan(current.needed);
+      expect(option.saved).toBe(current.needed - option.plan.needed);
+    }
+    expect(options.map((o) => o.plan.needed)).toEqual(
+      [...options.map((o) => o.plan.needed)].sort((a, b) => a - b),
+    );
+    expect(options.map((o) => o.nature)).toContain('Jolly');
+  });
+
+  it('no sugiere las que bajan el stat con el que ataca', () => {
+    // Rillaboom ataca con movimientos físicos: Timid (+Vel −Atq) no.
+    const natures = natureOptions(metagame, free, [outspeed]).map((o) => o.nature);
+    expect(natures).not.toContain('Timid');
+    expect(natures).not.toContain(free.nature);
+  });
+
+  it('un movimiento de estado sin categoría no cuenta como ataque especial', () => {
+    // La calculadora trae Parting Shot sin categoría: no es un ataque, así que Jolly (−AtE) vale.
+    const pivot = { ...free, moves: ['Wood Hammer', 'Parting Shot'] };
+    expect(natureOptions(metagame, pivot, [outspeed]).map((o) => o.nature)).toContain('Jolly');
+    expect(goalMoves(metagame, pivot, 'ko', 'Garchomp')).toEqual(['Wood Hammer']);
+  });
+
+  it('a igual ahorro, primero la que baja un stat de ataque que no usa', () => {
+    // Rillaboom ataca con movimientos físicos: Jolly (−AtE) antes que Hasty (−Def) o Naive (−DefE).
+    const options = natureOptions(metagame, free, [outspeed]);
+    const jolly = options.find((o) => o.nature === 'Jolly')!;
+    for (const other of options.filter((o) => o.plan.needed === jolly.plan.needed)) {
+      expect(options.indexOf(jolly)).toBeLessThanOrEqual(options.indexOf(other));
+    }
+  });
+
+  it('sin objetivos, nada', () => {
+    expect(natureOptions(metagame, free, [])).toEqual([]);
   });
 });

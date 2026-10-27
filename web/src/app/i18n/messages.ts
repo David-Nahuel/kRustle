@@ -140,7 +140,7 @@ const en = {
 
   'goals.title': 'SP goals',
   'goals.intro':
-    'Add opponents and the app finds the fewest SP that meet every goal in at least {pct} of cases (their most common tournament set and their ladder spreads), keeping your nature and your other stats.',
+    'Add opponents and the app finds the fewest SP that meet every goal in at least {pct} of cases (their most common tournament set and their ladder spreads), without touching your other stats, and suggests another nature if it saves SP.',
   'goals.survive': 'Survive',
   'goals.outspeed': 'Outspeed',
   'goals.ko': 'KO',
@@ -154,6 +154,11 @@ const en = {
   'goals.proposal': 'To meet them, move SP:',
   'goals.leftover': 'And {n} SP are still free.',
   'goals.apply': 'Apply',
+  'goals.natures': 'With another nature they cost fewer SP:',
+  'goals.natureSaves': '{n} SP fewer',
+  'goals.natureReaches': 'makes them possible',
+  'goals.useNature': 'Use',
+  'goals.useNatureTitle': 'Change the nature and apply its spread',
   'goals.unreachable': 'Not even with 32 SP: {goal} (at most {pct}).',
   'goals.tooMany':
     'They need {needed} SP in {stats} and only {available} are free: take some from other stats.',
@@ -563,7 +568,7 @@ const es: Record<MessageKey, string> = {
 
   'goals.title': 'Objetivos de SP',
   'goals.intro':
-    'Añade rivales y la app busca los SP mínimos que cumplen todos los objetivos en al menos el {pct} de los casos (con su set más común en torneos y sus repartos del ladder), sin cambiar tu naturaleza ni tus otros stats.',
+    'Añade rivales y la app busca los SP mínimos que cumplen todos los objetivos en al menos el {pct} de los casos (con su set más común en torneos y sus repartos del ladder), sin tocar tus otros stats, y te sugiere otra naturaleza si ahorra SP.',
   'goals.survive': 'Aguantar a',
   'goals.outspeed': 'Más rápido que',
   'goals.ko': 'Debilitar a',
@@ -577,6 +582,11 @@ const es: Record<MessageKey, string> = {
   'goals.proposal': 'Para cumplirlos, mueve SP:',
   'goals.leftover': 'Y quedan {n} SP sin repartir.',
   'goals.apply': 'Aplicar',
+  'goals.natures': 'Con otra naturaleza cuestan menos SP:',
+  'goals.natureSaves': '{n} SP menos',
+  'goals.natureReaches': 'se pueden cumplir',
+  'goals.useNature': 'Usar',
+  'goals.useNatureTitle': 'Cambia la naturaleza y aplica su reparto',
   'goals.unreachable': 'Ni con 32 SP: {goal} (como mucho, {pct}).',
   'goals.tooMany':
     'Necesitan {needed} SP en {stats} y solo hay {available} libres: quita de otros stats.',

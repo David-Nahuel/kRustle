@@ -1,4 +1,13 @@
-import { SP_PER_STAT, SP_TOTAL, STAT_IDS, type StatId, type Stats, getMove } from './champions';
+import {
+  GEN,
+  SP_PER_STAT,
+  SP_TOTAL,
+  STAT_IDS,
+  type StatId,
+  type Stats,
+  getMove,
+  getNature,
+} from './champions';
 import { type Distribution, atLeast, damageDistribution } from './combined';
 import { type Combatant, type FieldState, damageRolls, maxHp } from './damage';
 import { type RivalProfile, rivalProfile } from './matchup';
@@ -29,6 +38,8 @@ export type Plan =
       sps: Stats;
       /** Lo mínimo que cumple los objetivos en los stats de los que dependen. */
       minimum: Stats;
+      /** SP que suma `minimum` en esos stats: lo que "cuestan" los objetivos. */
+      needed: number;
       /** Probabilidad de cada objetivo con `sps`. */
       probabilities: number[];
       /** SP sin repartir en `sps` (solo si ya había SP sin repartir). */
@@ -129,9 +140,61 @@ export function planSps(
     ok: true,
     sps: proposal,
     minimum,
+    needed: bestTotal,
     probabilities: evaluators.map((e) => e.probability(proposal)),
     leftover: spare,
   };
+}
+
+export interface NatureOption {
+  nature: string;
+  plan: Extract<Plan, { ok: true }>;
+  /** SP menos que con la naturaleza actual (`Infinity` si con la actual no se puede). */
+  saved: number;
+}
+
+/**
+ * Naturalezas con las que los objetivos cuestan menos SP que con la actual, de la que más ahorra
+ * a la que menos. Solo se prueban las que suben un stat de los objetivos (las demás no pueden
+ * ahorrar nada) y una neutra, y no las que bajan el stat con el que ataca (Ataque si tiene
+ * movimientos físicos, Ataque Especial si especiales): eso no lo miden los objetivos.
+ */
+export function natureOptions(
+  metagame: Metagame,
+  member: TeamMember,
+  goals: readonly Goal[],
+  confidence = GOAL_CONFIDENCE,
+): NatureOption[] {
+  if (!goals.length) return [];
+  const current = planSps(metagame, member, goals, confidence);
+  const currentCost = current.ok ? current.needed : Infinity;
+  const involved = new Set(goals.flatMap((goal) => evaluator(metagame, member, goal).stats));
+  const attacking = new Set(
+    member.moves.flatMap((m) => {
+      const category = damageCategory(m);
+      return category ? [category === 'Physical' ? 'atk' : 'spa'] : [];
+    }),
+  );
+  const options: NatureOption[] = [];
+  for (const nature of GEN.natures) {
+    if (nature.name === member.nature) continue;
+    const neutral = !nature.plus || nature.plus === nature.minus;
+    if (neutral ? nature.name !== 'Serious' : !involved.has(nature.plus as StatId)) continue;
+    if (!neutral && attacking.has(nature.minus as StatId)) continue;
+    const plan = planSps(metagame, { ...member, nature: nature.name }, goals, confidence);
+    if (plan.ok && plan.needed < currentCost) {
+      options.push({ nature: nature.name, plan, saved: currentCost - plan.needed });
+    }
+  }
+  // A igual ahorro, mejor bajar un stat de ataque que no usa (Jolly en un atacante físico) que
+  // una defensa: eso no se nota en nada.
+  const harmless = (name: string) => {
+    const minus = getNature(name)?.minus as StatId | undefined;
+    return (minus === 'atk' || minus === 'spa') && !attacking.has(minus) ? 0 : 1;
+  };
+  return options.sort(
+    (a, b) => a.plan.needed - b.plan.needed || harmless(a.nature) - harmless(b.nature),
+  );
 }
 
 /**
@@ -160,10 +223,7 @@ export function goalMoves(
   const damage = (move: string) =>
     (damageRolls(attacker, defender, move) ?? []).reduce((sum, hit) => sum + Math.max(...hit), 0);
   return moves
-    .filter((m) => {
-      const move = getMove(m);
-      return move && move.category !== 'Status';
-    })
+    .filter((m) => damageCategory(m))
     .map((move) => ({ move, damage: damage(move) }))
     .sort((a, b) => b.damage - a.damage)
     .map(({ move }) => move);
@@ -259,8 +319,24 @@ function evaluator(metagame: Metagame, member: TeamMember, goal: Goal): Evaluato
 }
 
 /** Set más probable del rival (como si lo vieras sin conocer a sus compañeros) y sus repartos. */
+/**
+ * Físico o especial; `undefined` si no hace daño. Algunos de estado llegan de la calculadora sin
+ * categoría (Parting Shot), así que no basta con mirar si es "Status".
+ */
+function damageCategory(name: string): 'Physical' | 'Special' | undefined {
+  const category = getMove(name)?.category;
+  return category === 'Physical' || category === 'Special' ? category : undefined;
+}
+
+/** La inferencia es lo caro y no depende de tu Pokémon: se guarda por metagame y rival. */
+const profiles = new WeakMap<Metagame, Map<string, RivalProfile>>();
+
 function profileOf(metagame: Metagame, rival: string): RivalProfile {
-  return rivalProfile(metagame, rival, [rival]);
+  let cache = profiles.get(metagame);
+  if (!cache) profiles.set(metagame, (cache = new Map()));
+  let profile = cache.get(rival);
+  if (!profile) cache.set(rival, (profile = rivalProfile(metagame, rival, [rival])));
+  return profile;
 }
 
 function memo<T>(compute: (value: number) => T): (value: number) => T {

@@ -5,10 +5,11 @@ import {
   type Goal,
   type Plan,
   checkGoals,
+  natureOptions,
   goalMoves,
   planSps,
 } from '../../../engine/benchmarks';
-import { STAT_IDS, type StatId, type Stats } from '../../../engine/champions';
+import { STAT_IDS, type StatId, type Stats, getNature } from '../../../engine/champions';
 import type { TeamMember } from '../../../engine/pokepaste';
 import { MetagameService } from '../../data/metagame.service';
 import { persistedSignal } from '../../data/storage';
@@ -165,7 +166,7 @@ const OPTIONS: Record<Goal['kind'], { key: string; name: string; kind: 'moves' |
                 <button
                   type="button"
                   class="self-start rounded-lg bg-amber-400 px-3 py-1.5 text-sm font-semibold text-slate-950 hover:bg-amber-300"
-                  (click)="apply.emit(p.sps)"
+                  (click)="apply.emit({ sps: p.sps })"
                 >
                   {{ i18n.t('goals.apply') }}
                 </button>
@@ -190,6 +191,29 @@ const OPTIONS: Record<Goal['kind'], { key: string; name: string; kind: 'moves' |
                 }}
               </p>
             }
+            @if (natures().length) {
+              <div class="flex flex-col gap-1 border-t border-slate-800 pt-2">
+                <p class="text-slate-400">{{ i18n.t('goals.natures') }}</p>
+                @for (option of natures(); track option.nature) {
+                  <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span class="text-slate-200">{{ natureLabel(option.nature) }}</span>
+                    <span class="text-emerald-300">{{
+                      option.saved === Infinity
+                        ? i18n.t('goals.natureReaches')
+                        : i18n.t('goals.natureSaves', { n: option.saved })
+                    }}</span>
+                    <button
+                      type="button"
+                      class="ml-auto h-7 rounded-md px-2 text-amber-300 ring-1 ring-amber-400/40 hover:bg-amber-400/10"
+                      [title]="i18n.t('goals.useNatureTitle')"
+                      (click)="apply.emit({ nature: option.nature, sps: option.plan.sps })"
+                    >
+                      {{ i18n.t('goals.useNature') }}
+                    </button>
+                  </div>
+                }
+              </div>
+            }
           </div>
         }
       }
@@ -198,8 +222,9 @@ const OPTIONS: Record<Goal['kind'], { key: string; name: string; kind: 'moves' |
 })
 export class SpGoals {
   readonly member = input.required<TeamMember>();
-  /** Aplicar el reparto propuesto. */
-  readonly apply = output<Stats>();
+  /** Aplicar el reparto propuesto (y la naturaleza, si se elige otra). */
+  readonly apply = output<{ sps: Stats; nature?: string }>();
+  protected readonly Infinity = Infinity;
 
   protected readonly i18n = inject(I18n);
   protected readonly data = inject(MetagameService);
@@ -220,6 +245,24 @@ export class SpGoals {
     return metagame ? checkGoals(metagame, this.member(), this.goals()) : [];
   });
   protected readonly allMet = computed(() => this.current().every((p) => p >= this.confidence));
+
+  /** Hasta 3 naturalezas con las que los objetivos cuestan menos SP. */
+  protected readonly natures = computed(() => {
+    const metagame = this.data.metagame();
+    if (!metagame || !this.goals().length) return [];
+    return natureOptions(metagame, this.member(), this.goals()).slice(0, 3);
+  });
+
+  /** "Jolly (+Vel −AtE)", como en el selector de naturaleza. */
+  protected natureLabel(name: string): string {
+    const nature = getNature(name);
+    const label = this.i18n.nature(name);
+    if (!nature?.plus || !nature.minus || nature.plus === nature.minus) {
+      return `${label} (${this.i18n.t('edit.neutral')})`;
+    }
+    const stat = (s: string) => this.i18n.stat(s as StatId);
+    return `${label} (+${stat(nature.plus)} −${stat(nature.minus)})`;
+  }
 
   protected readonly plan = computed((): Plan | undefined => {
     const metagame = this.data.metagame();
