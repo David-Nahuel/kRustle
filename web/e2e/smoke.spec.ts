@@ -168,7 +168,12 @@ test('La calculadora suma el daño de dos Pokémon contra el mismo objetivo', as
   // El primero de tu equipo es el elegido: el compañero, el segundo. Y del rival, otro suyo.
   await partners.first().getByRole('radio', { name: mine[1] }).click();
   await partners.last().getByRole('radio').first().click();
-  await expect(page.getByText(/KO between both/)).toHaveCount(2);
+  // Cada lado da el resultado o dice que uno de los dos no tiene ataques que le afecten: depende
+  // de los datos del día (un Pokémon inmune a todo lo del otro es normal). Lo que no puede pasar
+  // es que se quede pidiendo un compañero.
+  for (const card of await page.locator('app-combo-card').all()) {
+    await expect(card).toContainText(/KO between both|has no damaging move/);
+  }
   expect(errors).toEqual([]);
 });
 
