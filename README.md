@@ -17,6 +17,12 @@ Herramientas para Pokémon Champions (VGC):
   móvil, con el menú de compartir del sistema). El paste va comprimido tras el `#` de la URL, que
   el navegador no envía al servidor. Al abrirlo se ve el equipo sin guardar; si ya estaba
   guardado, se elige ese.
+- **Objetivos de SP** (en el editor de cada Pokémon): aguantar el ataque de un rival, ser más
+  rápido que él o debilitarlo, con Helping Hand, Intimidate o Tailwind si hace falta. Del rival se
+  usa su set más común en torneos y sus repartos del ladder, así que cada objetivo se cumple con
+  una probabilidad (se pide el 90%). La app busca lo mínimo que los cumple a la vez y propone
+  mover solo esos SP: lo que falta sale de lo que sobra en los stats del objetivo, sin tocar tu
+  naturaleza ni los demás stats. Se guardan por especie en el navegador.
 - **Búsqueda por jugador**: si sabes contra quién juegas (usuario de Limitless), ves sus equipos
   anteriores, cargas uno con un toque y la inferencia usa sus propios sets.
 - **Meta**: uso y winrate de cada Pokémon, si sube o baja (última semana frente a las tres
