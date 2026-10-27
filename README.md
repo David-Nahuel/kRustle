@@ -40,6 +40,13 @@ Herramientas para Pokémon Champions (VGC):
   objetivo: si queda un solo rival o, con los que golpean también al compañero (Earthquake), si no
   queda nadie más en el campo. "Golpes críticos" calcula todos los ataques de los dos lados como
   crítico (×1,5, sin pantallas).
+- **Equipos como el tuyo en torneos** (en Meta, "Tu equipo"): el historial de los equipos que
+  comparten 5 o más de tus Pokémon (4 si no hay muestra), sin contar espejos: su winrate con
+  margen de error, los rivales contra los que les ha ido claramente peor o mejor y sus mejores
+  resultados. Se miran unos 80 rivales a la vez, así que para destacar uno se pide el 99% y no el
+  95% (con el 95% saldrían unos 4 por azar). Es descriptivo y lo dice: para un enfrentamiento
+  concreto (tu equipo contra el suyo) casi nunca hay muestra, y quién gana depende sobre todo de
+  quién juega.
 - **Velocidades** (en Meta): tus Pokémon entre los 30 más usados, de más rápido a más lento, con
   tu Tailwind, el suyo o Trick Room. De cada rival, su set más común (se marca si suele llevar
   Choice Scarf), la velocidad con su reparto más probable del ladder y el rango del 90% de ellos;

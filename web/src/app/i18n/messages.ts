@@ -416,6 +416,19 @@ const en = {
   'meta.goPick': 'Go to Pick',
   'meta.tabYourTeam': 'Your team',
   'meta.tabSpeed': 'Speed',
+  'record.title': 'Teams like yours in tournaments',
+  'record.summary':
+    '{teams} teams with at least {shared} of your Pokémon: {pct} wins in {games} games (±{margin}).',
+  'record.worst': 'They struggle against',
+  'record.best': 'They do well against',
+  'record.versusTitle': '{n} games against teams with this Pokémon',
+  'record.noVersus': 'No opponent stands out beyond what chance would explain.',
+  'record.runs': 'Best runs',
+  'record.players': '{n} players',
+  'record.caveat':
+    "Other players' games, not a prediction: who wins depends mostly on who plays. Mirror matches don't count, and only differences unlikely to be chance are shown.",
+  'record.none':
+    'Not enough tournament games with teams like yours (sharing 4 or more Pokémon) to say anything.',
   'speed.tiersIntro':
     'The 30 most used Pokémon with their most common set: the number is their most likely ladder spread, and the range covers 90% of them. Yours, in green.',
   'speed.tiersNoTeam': 'Save your team to see where your Pokémon fall among them.',
@@ -855,6 +868,19 @@ const es: Record<MessageKey, string> = {
   'meta.goPick': 'Ir a Selección',
   'meta.tabYourTeam': 'Tu equipo',
   'meta.tabSpeed': 'Velocidades',
+  'record.title': 'Equipos como el tuyo en torneos',
+  'record.summary':
+    '{teams} equipos con al menos {shared} de tus Pokémon: {pct} de victorias en {games} partidas (±{margin}).',
+  'record.worst': 'Les cuesta contra',
+  'record.best': 'Les va bien contra',
+  'record.versusTitle': '{n} partidas contra equipos con este Pokémon',
+  'record.noVersus': 'Ningún rival destaca más de lo que explicaría el azar.',
+  'record.runs': 'Mejores resultados',
+  'record.players': '{n} jugadores',
+  'record.caveat':
+    'Son partidas de otros jugadores, no una predicción: quién gana depende sobre todo de quién juega. No cuentan los espejos y solo se enseñan diferencias que difícilmente son azar.',
+  'record.none':
+    'No hay bastantes partidas en torneos de equipos como el tuyo (con 4 o más de tus Pokémon) para decir nada.',
   'speed.tiersIntro':
     'Los 30 más usados con su set más común: la cifra es con su reparto más probable del ladder y el rango cubre el 90% de ellos. Los tuyos, en verde.',
   'speed.tiersNoTeam': 'Guarda tu equipo para ver dónde quedan tus Pokémon entre ellos.',
