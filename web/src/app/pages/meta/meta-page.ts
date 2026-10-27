@@ -22,6 +22,7 @@ import type { MessageKey } from '../../i18n/messages';
 import { TONE_CLASSES, type Tone, koSummary, pct, winRateTone } from '../../shared/format';
 import { Sprite } from '../../shared/sprite';
 import { SpeedTiers } from './speed-tiers';
+import { TeamRecordCard } from './team-record-card';
 
 /** Con menos equipos en alguna de las dos ventanas, la tendencia es ruido y no se enseña. */
 const MIN_TREND_TEAMS = 300;
@@ -63,7 +64,7 @@ interface Row {
  */
 @Component({
   selector: 'app-meta-page',
-  imports: [RouterLink, SpeedTiers, Sprite],
+  imports: [RouterLink, SpeedTiers, Sprite, TeamRecordCard],
   templateUrl: './meta-page.html',
 })
 export class MetaPage {

@@ -230,6 +230,19 @@ test('La tabla de velocidades ordena el meta y Trick Room le da la vuelta', asyn
   expect(errors).toEqual([]);
 });
 
+test('El historial de equipos como el tuyo sale en "Tu equipo"', async ({ page, request }) => {
+  const { errors } = await setUp(page, request);
+  await page.goto('/meta');
+  await page.getByRole('tab', { name: 'Your team' }).click();
+  const card = page.locator('app-team-record-card');
+  await expect(card.getByRole('heading', { name: 'Teams like yours in tournaments' })).toBeVisible({
+    timeout: 30_000,
+  });
+  // Con los datos del día puede haber muestra o no: tiene que decir una de las dos cosas.
+  await expect(card).toContainText(/wins in .* games|Not enough tournament games/);
+  expect(errors).toEqual([]);
+});
+
 test('Las amenazas del meta para tu equipo se calculan y abren en la calculadora', async ({
   page,
   request,

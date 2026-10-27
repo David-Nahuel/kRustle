@@ -498,6 +498,7 @@
               >
             </div>
           } @else {
+            <app-team-record-card />
             <p class="text-xs text-slate-400">{{ t('meta.threatsHelp', { n: threatCount }) }}</p>
             @if (!threatsReady()) {
               <p class="text-sm text-slate-400" role="status">
