@@ -13,6 +13,7 @@ import { MetagameService } from '../../data/metagame.service';
 import { I18n } from '../../i18n/i18n.service';
 import { NameSearch } from '../../shared/name-search';
 import { Sprite } from '../../shared/sprite';
+import { SpGoals } from './sp-goals';
 
 const MOVE_SLOTS = [0, 1, 2, 3];
 
@@ -25,7 +26,7 @@ const NATURES = [...GEN.natures];
  */
 @Component({
   selector: 'app-member-editor',
-  imports: [NameSearch, Sprite],
+  imports: [NameSearch, SpGoals, Sprite],
   template: `
     <article
       class="flex h-full flex-col gap-3 rounded-xl border border-amber-400/50 bg-slate-900 p-3"
@@ -135,6 +136,8 @@ const NATURES = [...GEN.natures];
           </p>
         }
       </fieldset>
+
+      <app-sp-goals [member]="member()" (apply)="patch({ sps: $event })" />
 
       <fieldset class="grid grid-cols-2 gap-1.5">
         <legend class="mb-1 text-xs text-slate-400">{{ i18n.t('edit.moves') }}</legend>

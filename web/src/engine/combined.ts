@@ -34,7 +34,7 @@ export interface ComboOdds {
 const FULL_HP_SHIELDS = new Set(['Multiscale', 'Shadow Shield']);
 
 /** Daño total de un ataque (sumando sus golpes) y su probabilidad, de menor a mayor. */
-type Distribution = [damage: number, probability: number][];
+export type Distribution = [damage: number, probability: number][];
 
 interface Hit {
   /** Contra el defensor como está. */
@@ -150,11 +150,11 @@ function hitAgainst(
 ): Hit | null {
   const rolls = damageRolls(attacker, defender, move, field);
   if (!rolls) return null;
-  const fresh = distribution(rolls);
+  const fresh = damageDistribution(rolls);
   if (!shielded) return { fresh, hurt: fresh };
   // Cualquier PS por debajo del máximo vale: el escudo ya no está.
   const hurt = damageRolls(attacker, { ...defender, hpPercent: 99 }, move, field);
-  return { fresh, hurt: hurt ? distribution(hurt) : fresh };
+  return { fresh, hurt: hurt ? damageDistribution(hurt) : fresh };
 }
 
 /**
@@ -175,14 +175,15 @@ function koInOrder(a: Hit, b: Hit, hp: number, max: number, healing: number): nu
   return chance;
 }
 
-function atLeast(dist: Distribution, damage: number): number {
+/** Probabilidad de hacer al menos `damage`. */
+export function atLeast(dist: Distribution, damage: number): number {
   let chance = 0;
   for (const [value, probability] of dist) if (value >= damage) chance += probability;
   return chance;
 }
 
 /** Suma las tiradas de cada golpe (cada golpe tira las suyas por separado). */
-function distribution(hits: number[][]): Distribution {
+export function damageDistribution(hits: number[][]): Distribution {
   let totals = new Map<number, number>([[0, 1]]);
   for (const rolls of hits) {
     const next = new Map<number, number>();

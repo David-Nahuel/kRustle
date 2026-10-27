@@ -105,6 +105,24 @@ test('Compartir copia un enlace que reconoce el equipo ya guardado', async ({
   expect(errors).toEqual([]);
 });
 
+test('Los objetivos de SP proponen un reparto y se aplica', async ({ page, request }) => {
+  const { mine, errors } = await setUp(page, request);
+  await page.goto('/equipo');
+  await page.getByRole('button', { name: `Edit ${mine[0]}` }).click();
+  await page.getByRole('button', { name: /SP goals/ }).click();
+  // Ser más rápido que el más rápido del meta casi nunca se cumple con los SP de un paste sin
+  // Velocidad: el resultado tiene que decir algo (propuesta, imposible o que no cabe).
+  await page.locator('#goal-kind').selectOption('outspeed');
+  const search = page.getByPlaceholder('Opponent…');
+  await search.fill(mine[1]);
+  await search.press('Enter');
+  await expect(page.locator('app-sp-goals [role=status]').last()).toHaveText(
+    /move SP|Not even|They need|already meet/,
+    { timeout: 30_000 },
+  );
+  expect(errors).toEqual([]);
+});
+
 test('Pick recomienda qué 4 llevar y pinta los enfrentamientos', async ({ page, request }) => {
   const { errors } = await setUp(page, request);
   await page.goto('/seleccion');
