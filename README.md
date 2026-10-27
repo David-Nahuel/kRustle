@@ -41,7 +41,10 @@ Herramientas para Pokémon Champions (VGC):
   crítico (×1,5, sin pantallas).
 - **Modo partida** (dentro de la calculadora): PS, estados y cambios de stat de cada Pokémon, y lo que
   revela el rival (objeto, habilidad, movimientos), que reajusta la inferencia de su set. Se guarda
-  en el navegador por si se recarga a mitad de combate.
+  en el navegador por si se recarga a mitad de combate. "Nueva partida" pasa a la siguiente de la
+  serie (Bo3): vuelven los PS, los estados, las megas y el campo, pero lo que ha enseñado el rival
+  se queda, porque en una serie los sets no cambian, y se marca con ↺. "Vaciar" el equipo rival lo
+  olvida todo.
 - **Golpe doble** (dentro de la calculadora): si tu Pokémon y un compañero debilitan al rival
   entre los dos en un turno, o si el rival y uno suyo te debilitan a ti. Se combinan las 16
   tiradas de cada golpe con los repartos posibles del rival y los PS que le quedan al objetivo.

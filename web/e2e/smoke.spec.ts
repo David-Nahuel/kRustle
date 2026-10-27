@@ -172,6 +172,27 @@ test('La calculadora suma el daño de dos Pokémon contra el mismo objetivo', as
   expect(errors).toEqual([]);
 });
 
+test('Lo que enseña el rival se recuerda en la siguiente partida de la serie', async ({
+  page,
+  request,
+}) => {
+  const { errors } = await setUp(page, request);
+  await page.goto('/calculadora');
+  const seen = page.locator('app-revealed-editor button[aria-pressed]').first();
+  await expect(seen).toBeVisible({ timeout: 30_000 });
+  // El nombre sin el porcentaje de uso, que deja de verse al marcarlo.
+  const name = (await seen.textContent())!.replace(/<?\d+%/g, '').trim();
+  await seen.click();
+  await expect(seen).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'New game' }).click();
+  await expect(page.getByText('Game 2')).toBeVisible();
+  const kept = page
+    .locator('app-revealed-editor button[aria-pressed=true]')
+    .filter({ hasText: name });
+  await expect(kept).toContainText('↺');
+  expect(errors).toEqual([]);
+});
+
 test('Meta enseña el uso, la ficha de cada Pokémon y los núcleos', async ({ page, request }) => {
   const { errors } = await setUp(page, request);
   await page.goto('/meta');

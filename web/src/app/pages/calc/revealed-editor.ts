@@ -16,6 +16,8 @@ interface Option {
   /** Probabilidad según la inferencia (si la hay). */
   share?: number;
   seen: boolean;
+  /** Visto en una partida anterior de la serie. */
+  earlier?: boolean;
 }
 
 /**
@@ -61,6 +63,11 @@ interface Option {
               @if (o.share !== undefined && !o.seen) {
                 <span class="ml-0.5 text-slate-400">{{ pct(o.share) }}</span>
               }
+              @if (o.seen && o.earlier) {
+                <span class="ml-0.5 text-emerald-300/70" [title]="i18n.t('rev.earlierTitle')"
+                  >↺</span
+                >
+              }
             </button>
           }
         </div>
@@ -81,6 +88,9 @@ interface Option {
           <option [value]="name"></option>
         }
       </datalist>
+      @if (hasEarlier()) {
+        <p class="text-xs text-slate-400">{{ i18n.t('rev.earlierNote') }}</p>
+      }
       @if (mismatch()) {
         <p class="text-xs text-amber-300">{{ i18n.t('rev.mismatch') }}</p>
       }
@@ -91,6 +101,8 @@ export class RevealedEditor {
   readonly inference = input<SetInference | null>(null);
   readonly rivalSet = input.required<DecodedSet>();
   readonly revealed = input.required<Revealed>();
+  /** Lo que ya había enseñado en partidas anteriores de la serie (se marca con ↺). */
+  readonly earlier = input<Revealed>({});
   readonly changed = output<Revealed>();
 
   protected readonly i18n = inject(I18n);
@@ -107,10 +119,16 @@ export class RevealedEditor {
   });
   protected readonly mismatch = computed(() => !!this.inference()?.revealedMismatch);
 
+  /** Algo de lo marcado viene de una partida anterior. */
+  protected readonly hasEarlier = computed(() =>
+    this.groups().some((g) => g.options.some((o) => o.seen && o.earlier)),
+  );
+
   protected readonly groups = computed(() => {
     const inf = this.inference();
     const set = this.rivalSet();
     const r = this.revealed();
+    const before = this.earlier();
     const seenMoves = r.moves ?? [];
     const groups: {
       kind: DataKind;
@@ -121,8 +139,11 @@ export class RevealedEditor {
       {
         kind: 'moves',
         label: 'set.moves',
-        options: options([...seenMoves, ...set.moves], inf?.moves.slice(0, 10), (m) =>
-          seenMoves.includes(m),
+        options: options(
+          [...seenMoves, ...set.moves],
+          inf?.moves.slice(0, 10),
+          (m) => seenMoves.includes(m),
+          (m) => !!before.moves?.includes(m),
         ),
         toggle: (move) =>
           this.changed.emit({
@@ -135,13 +156,23 @@ export class RevealedEditor {
       {
         kind: 'items',
         label: 'set.item',
-        options: options([r.item, set.item], inf?.items.slice(0, 5), (i) => i === r.item),
+        options: options(
+          [r.item, set.item],
+          inf?.items.slice(0, 5),
+          (i) => i === r.item,
+          (i) => i === before.item,
+        ),
         toggle: (item) => this.changed.emit({ ...r, item: r.item === item ? undefined : item }),
       },
       {
         kind: 'abilities',
         label: 'set.ability',
-        options: options([r.ability, set.ability], inf?.abilities, (a) => a === r.ability),
+        options: options(
+          [r.ability, set.ability],
+          inf?.abilities,
+          (a) => a === r.ability,
+          (a) => a === before.ability,
+        ),
         toggle: (ability) =>
           this.changed.emit({ ...r, ability: r.ability === ability ? undefined : ability }),
       },
@@ -168,8 +199,14 @@ function options(
   first: (string | undefined)[],
   shares: [string, number][] | undefined,
   seen: (name: string) => boolean,
+  earlier: (name: string) => boolean,
 ): Option[] {
   const shareOf = new Map(shares ?? []);
   const names = [...first, ...(shares ?? []).map(([n]) => n)].filter((n): n is string => !!n);
-  return [...new Set(names)].map((name) => ({ name, share: shareOf.get(name), seen: seen(name) }));
+  return [...new Set(names)].map((name) => ({
+    name,
+    share: shareOf.get(name),
+    seen: seen(name),
+    earlier: earlier(name),
+  }));
 }

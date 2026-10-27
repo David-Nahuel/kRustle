@@ -238,7 +238,9 @@ const en = {
   'calc.noTeam': 'Save your team first to start calculating.',
   'calc.myPokemon': 'Your Pokémon',
   'calc.newGame': 'New game',
-  'calc.newGameTitle': 'Resets HP, status, what was revealed and the field; keeps both teams',
+  'calc.newGameTitle':
+    'Next game against the same opponent: resets HP, status, Megas and the field; keeps both teams and what they revealed',
+  'calc.game': 'Game {n}',
   'calc.addRivals': "Add your opponent's Pokémon to see the calc.",
   'calc.myAttacks': 'Your attacks',
   'calc.theirAttacks': 'Their attacks',
@@ -333,6 +335,9 @@ const en = {
 
   'rev.title': 'Seen in battle',
   'rev.clear': 'Clear',
+  'rev.earlierTitle': 'Seen in an earlier game of this series',
+  'rev.earlierNote':
+    "↺ seen in an earlier game: sets don't change within a series. Clear the opponent's team when you face someone else.",
   'rev.other': 'Other',
   'rev.otherPlaceholder': 'Move or item not listed above…',
   'rev.mismatch':
@@ -654,7 +659,9 @@ const es: Record<MessageKey, string> = {
   'calc.noTeam': 'Primero guarda tu equipo para poder calcular.',
   'calc.myPokemon': 'Tu Pokémon',
   'calc.newGame': 'Nueva partida',
-  'calc.newGameTitle': 'Reinicia PS, estados, lo visto y el campo; mantiene los dos equipos',
+  'calc.newGameTitle':
+    'Siguiente partida contra el mismo rival: reinicia PS, estados, megas y el campo; mantiene los dos equipos y lo que ha enseñado',
+  'calc.game': 'Partida {n}',
   'calc.addRivals': 'Añade los Pokémon del rival para ver el cálculo.',
   'calc.myAttacks': 'Tus ataques',
   'calc.theirAttacks': 'Sus ataques',
@@ -749,6 +756,9 @@ const es: Record<MessageKey, string> = {
 
   'rev.title': 'Visto en combate',
   'rev.clear': 'Borrar',
+  'rev.earlierTitle': 'Visto en una partida anterior de esta serie',
+  'rev.earlierNote':
+    '↺ visto en una partida anterior: en una serie los sets no cambian. Vacía el equipo rival cuando juegues contra otro.',
   'rev.other': 'Otro',
   'rev.otherPlaceholder': 'Movimiento u objeto que no sale arriba…',
   'rev.mismatch':
